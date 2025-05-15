@@ -17,15 +17,43 @@ This demo showcases a dark pools trading system using the A2A Python SDK. The sy
 
 ## Setup
 
-1. Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
+See the Quickstart section below for the recommended way to set up and run the demo after cloning the repository.
 
-2. Run the demo:
-```bash
-python main.py
-```
+## Quickstart: Running the Demo After Cloning
+
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd DarkPools-A2A/examples/dark_pools
+   ```
+
+2. **(Recommended) Create and activate a Python 3.9 environment:**
+   ```bash
+   conda create -n darkpools-demo python=3.9
+   conda activate darkpools-demo
+   ```
+   Or with `venv`:
+   ```bash
+   python3.9 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install required dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install the main package in development mode (from the repo root):**
+   ```bash
+   cd ../../..
+   pip install -e .
+   cd examples/dark_pools
+   ```
+
+5. **Run the demo:**
+   ```bash
+   python main.py
+   ```
 
 ## How it Works
 

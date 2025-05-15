@@ -3,12 +3,12 @@ name = "a2a"
 version = "0.2.0"
 description = "A2A Python SDK"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.9"
 dependencies = [
     "httpx>=0.28.1",
     "httpx-sse>=0.4.0",
     "mypy>=1.15.0",
-    "pydantic>=2.11.3",
+    "pydantic>=1.10.13,<2.0.0",
     "sse-starlette>=2.3.3",
     "starlette>=0.46.2",
     "typing-extensions>=4.13.2",

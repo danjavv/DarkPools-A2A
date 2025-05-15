@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Literal
+from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel
 
 
-class A2A(RootModel[Any]):
+class A2A(BaseModel):
     root: Any
 
 
@@ -19,7 +19,7 @@ class AgentAuthentication(BaseModel):
     Intended to match OpenAPI authentication structure.
     """
 
-    credentials: str | None = None
+    credentials: Optional[str] = None
     """
     credentials a client should use for private cards
     """
@@ -34,15 +34,15 @@ class AgentCapabilities(BaseModel):
     Defines optional capabilities supported by an agent.
     """
 
-    pushNotifications: bool | None = None
+    pushNotifications: Optional[bool] = None
     """
     true if the agent can notify updates to client
     """
-    stateTransitionHistory: bool | None = None
+    stateTransitionHistory: Optional[bool] = None
     """
     true if the agent exposes status change history for tasks
     """
-    streaming: bool | None = None
+    streaming: Optional[bool] = None
     """
     true if the agent supports SSE
     """
@@ -73,7 +73,7 @@ class AgentSkill(BaseModel):
     description of the skill - will be used by the client or a human
     as a hint to understand what the skill does.
     """
-    examples: list[str] | None = None
+    examples: Optional[list[str]] = None
     """
     The set of example scenarios that the skill can perform.
     Will be used by the client as a hint to understand how the skill can be
@@ -83,7 +83,7 @@ class AgentSkill(BaseModel):
     """
     unique identifier for the agent's skill
     """
-    inputModes: list[str] | None = None
+    inputModes: Optional[list[str]] = None
     """
     The set of interaction modes that the skill supports
     (if different than the default).
@@ -93,7 +93,7 @@ class AgentSkill(BaseModel):
     """
     human readable name of the skill
     """
-    outputModes: list[str] | None = None
+    outputModes: Optional[list[str]] = None
     """
     Supported mime types for output.
     """
@@ -113,12 +113,12 @@ class ContentTypeNotSupportedError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Incompatible content types'
+    message: Optional[str] = 'Incompatible content types'
     """
     A String providing a short description of the error.
     """
@@ -133,7 +133,7 @@ class DataPart(BaseModel):
     """
     Structured data content
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     Optional metadata associated with the part.
     """
@@ -148,11 +148,11 @@ class FileBase(BaseModel):
     Represents the base entity for FileParts
     """
 
-    mimeType: str | None = None
+    mimeType: Optional[str] = None
     """
     Optional mimeType for the file
     """
-    name: str | None = None
+    name: Optional[str] = None
     """
     Optional name for the file
     """
@@ -167,11 +167,11 @@ class FileWithBytes(BaseModel):
     """
     base64 encoded content of the file
     """
-    mimeType: str | None = None
+    mimeType: Optional[str] = None
     """
     Optional mimeType for the file
     """
-    name: str | None = None
+    name: Optional[str] = None
     """
     Optional name for the file
     """
@@ -182,11 +182,11 @@ class FileWithUri(BaseModel):
     Define the variant where 'uri' is present and 'bytes' is absent
     """
 
-    mimeType: str | None = None
+    mimeType: Optional[str] = None
     """
     Optional mimeType for the file
     """
-    name: str | None = None
+    name: Optional[str] = None
     """
     Optional name for the file
     """
@@ -202,12 +202,12 @@ class InternalError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Internal error'
+    message: Optional[str] = 'Internal error'
     """
     A String providing a short description of the error.
     """
@@ -222,12 +222,12 @@ class InvalidAgentResponseError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Invalid agent response'
+    message: Optional[str] = 'Invalid agent response'
     """
     A String providing a short description of the error.
     """
@@ -242,12 +242,12 @@ class InvalidParamsError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Invalid parameters'
+    message: Optional[str] = 'Invalid parameters'
     """
     A String providing a short description of the error.
     """
@@ -262,12 +262,12 @@ class InvalidRequestError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Request payload validation error'
+    message: Optional[str] = 'Request payload validation error'
     """
     A String providing a short description of the error.
     """
@@ -282,12 +282,12 @@ class JSONParseError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Invalid JSON payload'
+    message: Optional[str] = 'Invalid JSON payload'
     """
     A String providing a short description of the error.
     """
@@ -303,7 +303,7 @@ class JSONRPCError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
@@ -319,7 +319,7 @@ class JSONRPCMessage(BaseModel):
     Base interface for any JSON-RPC 2.0 request or response.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -335,7 +335,7 @@ class JSONRPCRequest(BaseModel):
     Represents a JSON-RPC 2.0 Request object.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -348,7 +348,7 @@ class JSONRPCRequest(BaseModel):
     """
     A String containing the name of the method to be invoked.
     """
-    params: dict[str, Any] | None = None
+    params: Optional[dict[str, Any]] = None
     """
     A Structured value that holds the parameter values to be used during the invocation of the method.
     """
@@ -359,7 +359,7 @@ class JSONRPCResult(BaseModel):
     Represents a JSON-RPC 2.0 Result object.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -392,12 +392,12 @@ class MethodNotFoundError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Method not found'
+    message: Optional[str] = 'Method not found'
     """
     A String providing a short description of the error.
     """
@@ -408,7 +408,7 @@ class PartBase(BaseModel):
     Base properties common to all message parts.
     """
 
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     Optional metadata associated with the part.
     """
@@ -419,7 +419,7 @@ class PushNotificationAuthenticationInfo(BaseModel):
     Defines authentication details for push notifications.
     """
 
-    credentials: str | None = None
+    credentials: Optional[str] = None
     """
     Optional credentials
     """
@@ -434,8 +434,8 @@ class PushNotificationConfig(BaseModel):
     Configuration for setting up push notifications for task updates.
     """
 
-    authentication: PushNotificationAuthenticationInfo | None = None
-    token: str | None = None
+    authentication: Optional[PushNotificationAuthenticationInfo] = None
+    token: Optional[str] = None
     """
     token unique to this task/session
     """
@@ -454,12 +454,12 @@ class PushNotificationNotSupportedError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Push Notification is not supported'
+    message: Optional[str] = 'Push Notification is not supported'
     """
     A String providing a short description of the error.
     """
@@ -474,7 +474,7 @@ class TaskIdParams(BaseModel):
     """
     task id
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class TaskNotCancelableError(BaseModel):
@@ -486,12 +486,12 @@ class TaskNotCancelableError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Task cannot be canceled'
+    message: Optional[str] = 'Task cannot be canceled'
     """
     A String providing a short description of the error.
     """
@@ -506,12 +506,12 @@ class TaskNotFoundError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'Task not found'
+    message: Optional[str] = 'Task not found'
     """
     A String providing a short description of the error.
     """
@@ -534,7 +534,7 @@ class TaskQueryParams(BaseModel):
     Parameters for querying a task, including optional history length.
     """
 
-    historyLength: int | None = None
+    historyLength: Optional[int] = None
     """
     number of recent messages to be retrieved
     """
@@ -542,7 +542,7 @@ class TaskQueryParams(BaseModel):
     """
     task id
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class TaskResubscriptionRequest(BaseModel):
@@ -550,7 +550,7 @@ class TaskResubscriptionRequest(BaseModel):
     JSON-RPC request model for the 'tasks/resubscribe' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -590,7 +590,7 @@ class TextPart(BaseModel):
     Represents a text segment within parts.
     """
 
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     Optional metadata associated with the part.
     """
@@ -613,45 +613,31 @@ class UnsupportedOperationError(BaseModel):
     """
     A Number that indicates the error type that occurred.
     """
-    data: Any | None = None
+    data: Optional[Any] = None
     """
     A Primitive or Structured value that contains additional information about the error.
     This may be omitted.
     """
-    message: str | None = 'This operation is not supported'
+    message: Optional[str] = 'This operation is not supported'
     """
     A String providing a short description of the error.
     """
 
 
-class A2AError(
-    RootModel[
-        JSONParseError
-        | InvalidRequestError
-        | MethodNotFoundError
-        | InvalidParamsError
-        | InternalError
-        | TaskNotFoundError
-        | TaskNotCancelableError
-        | PushNotificationNotSupportedError
-        | UnsupportedOperationError
-        | ContentTypeNotSupportedError
-        | InvalidAgentResponseError
+class A2AError(BaseModel):
+    root: Union[
+        JSONParseError,
+        InvalidRequestError,
+        MethodNotFoundError,
+        InvalidParamsError,
+        InternalError,
+        TaskNotFoundError,
+        TaskNotCancelableError,
+        PushNotificationNotSupportedError,
+        UnsupportedOperationError,
+        ContentTypeNotSupportedError,
+        InvalidAgentResponseError
     ]
-):
-    root: (
-        JSONParseError
-        | InvalidRequestError
-        | MethodNotFoundError
-        | InvalidParamsError
-        | InternalError
-        | TaskNotFoundError
-        | TaskNotCancelableError
-        | PushNotificationNotSupportedError
-        | UnsupportedOperationError
-        | ContentTypeNotSupportedError
-        | InvalidAgentResponseError
-    )
 
 
 class AgentCard(BaseModel):
@@ -686,7 +672,7 @@ class AgentCard(BaseModel):
     A human-readable description of the agent. Used to assist users and
     other agents in understanding what the agent can do.
     """
-    documentationUrl: str | None = None
+    documentationUrl: Optional[str] = None
     """
     A URL to documentation for the agent.
     """
@@ -694,7 +680,7 @@ class AgentCard(BaseModel):
     """
     Human readable name of the agent.
     """
-    provider: AgentProvider | None = None
+    provider: Optional[AgentProvider] = None
     """
     The service provider of the agent
     """
@@ -717,7 +703,7 @@ class CancelTaskRequest(BaseModel):
     JSON-RPC request model for the 'tasks/cancel' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -741,11 +727,11 @@ class FilePart(BaseModel):
     Represents a File segment within parts.
     """
 
-    file: FileWithBytes | FileWithUri
+    file: Union[FileWithBytes, FileWithUri]
     """
     File content either as url or bytes
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     Optional metadata associated with the part.
     """
@@ -760,7 +746,7 @@ class GetTaskPushNotificationConfigRequest(BaseModel):
     JSON-RPC request model for the 'tasks/pushNotificationConfig/get' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -786,7 +772,7 @@ class GetTaskPushNotificationConfigSuccessResponse(BaseModel):
     JSON-RPC success response model for the 'tasks/pushNotificationConfig/get' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -806,7 +792,7 @@ class GetTaskRequest(BaseModel):
     JSON-RPC request model for the 'tasks/get' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -830,21 +816,21 @@ class JSONRPCErrorResponse(BaseModel):
     Represents a JSON-RPC 2.0 Error Response object.
     """
 
-    error: (
-        JSONRPCError
-        | JSONParseError
-        | InvalidRequestError
-        | MethodNotFoundError
-        | InvalidParamsError
-        | InternalError
-        | TaskNotFoundError
-        | TaskNotCancelableError
-        | PushNotificationNotSupportedError
-        | UnsupportedOperationError
-        | ContentTypeNotSupportedError
-        | InvalidAgentResponseError
-    )
-    id: str | int | None = None
+    error: Union[
+        JSONRPCError,
+        JSONParseError,
+        InvalidRequestError,
+        MethodNotFoundError,
+        InvalidParamsError,
+        InternalError,
+        TaskNotFoundError,
+        TaskNotCancelableError,
+        PushNotificationNotSupportedError,
+        UnsupportedOperationError,
+        ContentTypeNotSupportedError,
+        InvalidAgentResponseError
+    ]
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -864,22 +850,22 @@ class MessageSendConfiguration(BaseModel):
     """
     accepted output modalities by the client
     """
-    blocking: bool | None = None
+    blocking: Optional[bool] = None
     """
     If the server should treat the client as a blocking request
     """
-    historyLength: int | None = None
+    historyLength: Optional[int] = None
     """
     number of recent messages to be retrieved
     """
-    pushNotificationConfig: PushNotificationConfig | None = None
+    pushNotificationConfig: Optional[PushNotificationConfig] = None
     """
     where the server should send notifications when disconnected.
     """
 
 
-class Part(RootModel[TextPart | FilePart | DataPart]):
-    root: TextPart | FilePart | DataPart
+class Part(BaseModel):
+    root: Union[TextPart, FilePart, DataPart]
     """
     Represents a part of a message, which can be text, a file, or structured data.
     """
@@ -890,7 +876,7 @@ class SetTaskPushNotificationConfigRequest(BaseModel):
     JSON-RPC request model for the 'tasks/pushNotificationConfig/set' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -916,7 +902,7 @@ class SetTaskPushNotificationConfigSuccessResponse(BaseModel):
     JSON-RPC success response model for the 'tasks/pushNotificationConfig/set' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -940,15 +926,15 @@ class Artifact(BaseModel):
     """
     unique identifier for the artifact
     """
-    description: str | None = None
+    description: Optional[str] = None
     """
     Optional description for the artifact
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
-    name: str | None = None
+    name: Optional[str] = None
     """
     Optional name for the artifact
     """
@@ -958,12 +944,8 @@ class Artifact(BaseModel):
     """
 
 
-class GetTaskPushNotificationConfigResponse(
-    RootModel[
-        JSONRPCErrorResponse | GetTaskPushNotificationConfigSuccessResponse
-    ]
-):
-    root: JSONRPCErrorResponse | GetTaskPushNotificationConfigSuccessResponse
+class GetTaskPushNotificationConfigResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, GetTaskPushNotificationConfigSuccessResponse]
     """
     JSON-RPC response for the 'tasks/pushNotificationConfig/set' method.
     """
@@ -974,11 +956,11 @@ class Message(BaseModel):
     Represents a single message exchanged between user and agent.
     """
 
-    contextId: str | None = None
+    contextId: Optional[str] = None
     """
     the context the message is associated with
     """
-    final: bool | None = None
+    final: Optional[bool] = None
     """
     indicates the end of the event stream
     """
@@ -986,7 +968,7 @@ class Message(BaseModel):
     """
     identifier created by the message creator
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
@@ -998,7 +980,7 @@ class Message(BaseModel):
     """
     message sender's role
     """
-    taskId: str | None = None
+    taskId: Optional[str] = None
     """
     identifier of task the message is related to
     """
@@ -1013,7 +995,7 @@ class MessageSendParams(BaseModel):
     Sent by the client to the agent as a request. May create, continue or restart a task.
     """
 
-    configuration: MessageSendConfiguration | None = None
+    configuration: Optional[MessageSendConfiguration] = None
     """
     Send message configuration
     """
@@ -1021,7 +1003,7 @@ class MessageSendParams(BaseModel):
     """
     The message being sent to the server
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
@@ -1032,7 +1014,7 @@ class SendMessageRequest(BaseModel):
     JSON-RPC request model for the 'message/send' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1056,7 +1038,7 @@ class SendStreamingMessageRequest(BaseModel):
     JSON-RPC request model for the 'message/stream' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1075,12 +1057,8 @@ class SendStreamingMessageRequest(BaseModel):
     """
 
 
-class SetTaskPushNotificationConfigResponse(
-    RootModel[
-        JSONRPCErrorResponse | SetTaskPushNotificationConfigSuccessResponse
-    ]
-):
-    root: JSONRPCErrorResponse | SetTaskPushNotificationConfigSuccessResponse
+class SetTaskPushNotificationConfigResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, SetTaskPushNotificationConfigSuccessResponse]
     """
     JSON-RPC response for the 'tasks/pushNotificationConfig/set' method.
     """
@@ -1091,7 +1069,7 @@ class TaskArtifactUpdateEvent(BaseModel):
     sent by server during sendStream or subscribe requests
     """
 
-    append: bool | None = None
+    append: Optional[bool] = None
     """
     Indicates if this artifact appends to a previous one
     """
@@ -1103,11 +1081,11 @@ class TaskArtifactUpdateEvent(BaseModel):
     """
     the context the task is associated with
     """
-    lastChunk: bool | None = None
+    lastChunk: Optional[bool] = None
     """
     Indicates if this is the last chunk of the artifact
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
@@ -1126,12 +1104,12 @@ class TaskStatus(BaseModel):
     TaskState and accompanying message.
     """
 
-    message: Message | None = None
+    message: Optional[Message] = None
     """
     additional status updates for client
     """
     state: TaskState
-    timestamp: str | None = None
+    timestamp: Optional[str] = None
     """
     ISO 8601 datetime string when the status was recorded.
     """
@@ -1150,7 +1128,7 @@ class TaskStatusUpdateEvent(BaseModel):
     """
     indicates the end of the event stream
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
@@ -1168,33 +1146,23 @@ class TaskStatusUpdateEvent(BaseModel):
     """
 
 
-class A2ARequest(
-    RootModel[
-        SendMessageRequest
-        | SendStreamingMessageRequest
-        | GetTaskRequest
-        | CancelTaskRequest
-        | SetTaskPushNotificationConfigRequest
-        | GetTaskPushNotificationConfigRequest
-        | TaskResubscriptionRequest
+class A2ARequest(BaseModel):
+    root: Union[
+        SendMessageRequest,
+        SendStreamingMessageRequest,
+        GetTaskRequest,
+        CancelTaskRequest,
+        SetTaskPushNotificationConfigRequest,
+        GetTaskPushNotificationConfigRequest,
+        TaskResubscriptionRequest
     ]
-):
-    root: (
-        SendMessageRequest
-        | SendStreamingMessageRequest
-        | GetTaskRequest
-        | CancelTaskRequest
-        | SetTaskPushNotificationConfigRequest
-        | GetTaskPushNotificationConfigRequest
-        | TaskResubscriptionRequest
-    )
     """
     A2A supported request types
     """
 
 
 class Task(BaseModel):
-    artifacts: list[Artifact] | None = None
+    artifacts: Optional[list[Artifact]] = None
     """
     collection of artifacts created by the agent.
     """
@@ -1202,12 +1170,12 @@ class Task(BaseModel):
     """
     server-generated id for contextual alignment across interactions
     """
-    history: list[Message] | None = None
+    history: Optional[list[Message]] = None
     id: str
     """
     unique identifier for the task
     """
-    metadata: dict[str, Any] | None = None
+    metadata: Optional[dict[str, Any]] = None
     """
     extension metadata
     """
@@ -1226,7 +1194,7 @@ class CancelTaskSuccessResponse(BaseModel):
     JSON-RPC success response model for the 'tasks/cancel' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1246,7 +1214,7 @@ class GetTaskSuccessResponse(BaseModel):
     JSON-RPC success response for the 'tasks/get' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1266,7 +1234,7 @@ class SendMessageSuccessResponse(BaseModel):
     JSON-RPC success response model for the 'message/send' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1275,7 +1243,7 @@ class SendMessageSuccessResponse(BaseModel):
     """
     Specifies the version of the JSON-RPC protocol. MUST be exactly "2.0".
     """
-    result: Task | Message
+    result: Union[Task, Message]
     """
     The result object on success
     """
@@ -1286,7 +1254,7 @@ class SendStreamingMessageSuccessResponse(BaseModel):
     JSON-RPC success response model for the 'message/stream' method.
     """
 
-    id: str | int | None = None
+    id: Optional[Union[str, int]] = None
     """
     An identifier established by the Client that MUST contain a String, Number
     Numbers SHOULD NOT contain fractional parts.
@@ -1295,66 +1263,50 @@ class SendStreamingMessageSuccessResponse(BaseModel):
     """
     Specifies the version of the JSON-RPC protocol. MUST be exactly "2.0".
     """
-    result: Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
+    result: Union[Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent]
     """
     The result object on success
     """
 
 
-class CancelTaskResponse(
-    RootModel[JSONRPCErrorResponse | CancelTaskSuccessResponse]
-):
-    root: JSONRPCErrorResponse | CancelTaskSuccessResponse
+class CancelTaskResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, CancelTaskSuccessResponse]
     """
     JSON-RPC response for the 'tasks/cancel' method.
     """
 
 
-class GetTaskResponse(RootModel[JSONRPCErrorResponse | GetTaskSuccessResponse]):
-    root: JSONRPCErrorResponse | GetTaskSuccessResponse
+class GetTaskResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, GetTaskSuccessResponse]
     """
     JSON-RPC success response for the 'tasks/get' method.
     """
 
 
-class JSONRPCResponse(
-    RootModel[
-        JSONRPCErrorResponse
-        | SendMessageSuccessResponse
-        | SendStreamingMessageSuccessResponse
-        | GetTaskSuccessResponse
-        | CancelTaskSuccessResponse
-        | SetTaskPushNotificationConfigSuccessResponse
-        | GetTaskPushNotificationConfigSuccessResponse
+class JSONRPCResponse(BaseModel):
+    root: Union[
+        JSONRPCErrorResponse,
+        SendMessageSuccessResponse,
+        SendStreamingMessageSuccessResponse,
+        GetTaskSuccessResponse,
+        CancelTaskSuccessResponse,
+        SetTaskPushNotificationConfigSuccessResponse,
+        GetTaskPushNotificationConfigSuccessResponse
     ]
-):
-    root: (
-        JSONRPCErrorResponse
-        | SendMessageSuccessResponse
-        | SendStreamingMessageSuccessResponse
-        | GetTaskSuccessResponse
-        | CancelTaskSuccessResponse
-        | SetTaskPushNotificationConfigSuccessResponse
-        | GetTaskPushNotificationConfigSuccessResponse
-    )
     """
     Represents a JSON-RPC 2.0 Response object.
     """
 
 
-class SendMessageResponse(
-    RootModel[JSONRPCErrorResponse | SendMessageSuccessResponse]
-):
-    root: JSONRPCErrorResponse | SendMessageSuccessResponse
+class SendMessageResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, SendMessageSuccessResponse]
     """
     JSON-RPC response model for the 'message/send' method.
     """
 
 
-class SendStreamingMessageResponse(
-    RootModel[JSONRPCErrorResponse | SendStreamingMessageSuccessResponse]
-):
-    root: JSONRPCErrorResponse | SendStreamingMessageSuccessResponse
+class SendStreamingMessageResponse(BaseModel):
+    root: Union[JSONRPCErrorResponse, SendStreamingMessageSuccessResponse]
     """
     JSON-RPC response model for the 'message/stream' method.
     """
