@@ -8,6 +8,10 @@ This demo showcases a dark pools trading system using the A2A Python SDK. The sy
 2. Market Data Agent - Provides real-time market information
 3. Trading Agents - Submit buy/sell orders to the dark pool
 
+## Google Docs - 
+1. https://docs.google.com/document/d/12UkfykkRZauD-IjDgWmcboLXSk3wzIrNPbmSfp0kRwA/edit?usp=sharing
+2. https://docs.google.com/document/d/1QcgBR1hDCae-TbnBORLisdACFGeNcgModAH_mN37ZEk/edit?usp=sharing
+   
 ## Features
 
 - Secure order matching in dark pools
