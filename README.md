@@ -57,6 +57,8 @@ See the Quickstart section below for the recommended way to set up and run the d
 
 ## How it Works
 
+![flow_diagram](https://github.com/user-attachments/assets/13272904-ddcf-434f-b6ab-91d13ffe47fe)
+
 1. The Dark Pools Agent receives orders from trading agents and matches them based on price and quantity
 2. The Market Data Agent provides real-time price information for stocks
 3. Trading Agents submit random buy/sell orders and maintain their positions and balances
