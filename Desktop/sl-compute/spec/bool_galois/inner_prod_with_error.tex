@@ -1,0 +1,43 @@
+\section{Inner Product With Error}
+
+The technique for multiplication can easily be extended to computing 
+the inner product (or dot product) of two vectors of Galois field elements.
+Observe that in the multiplication protocol, 
+the parties first created an additive sharing of the product by multiplying local shares.
+The inner product protocol first applies this method to obtain additive 
+sharings of all of the products 
+$(\vec{X}_0 \Gmult \vec{Y}_0), \ldots, (\vec{X}_{n-1} \Gmult \vec{Y}_{n-1})$.
+Additive sharings can be summed by each party simply adding their shares locally.
+This results in an additive sharing of the inner product,
+which is re-shared to a Replicated Secret Sharing by each party
+inputting their additive share.
+Note that even though $n$ multiplications occur, only 1 re-sharing is necessary.
+As such the communication cost of an inner product is identical
+to that of a multiplication.
+Furthermore, the adversary's ability to distort the result is the same
+as with the multiplication:
+they can choose to input an incorrect value during the re-sharing,
+but this will only have the effect of introducing an additive error 
+to the result.
+
+\begin{protocol}[Galois Inner Product with Error]
+	\GalInnerProdWithError{\gvec{X}}{\gvec{Y}}:
+	\begin{enumerate}
+		\item Let $\{\private{(\vec{X}_{i,t}, \vec{X}_{i+1,t})}{i}\}_{t=0,\ldots,n-1}$ and
+			$\{\private{(\vec{Y}_{i,t}, \vec{Y}_{i+1,t})}{i}\}_{t=0,\ldots,n-1}$
+			represent $P_i$'s shares of $\vec{X}$ and $\vec{Y}$
+			respectively.
+		\item $P_i$ locally computes:\\ 
+			$\vec{R}_{i,t} = (\vec{X}_{i,t} \Gmult \vec{Y}_{i,t}) 
+				\Gadd (\vec{X}_{i,t} \Gmult \vec{Y}_{i+1,t})
+				\Gadd (\vec{X}_{i+1,t} \Gmult \vec{Y}_{i,t})$ for $t=0,\ldots,n-1$.\\
+			$r_i = \vec{R}_{i,0} \Gadd \ldots \Gadd \vec{R}_{i,n-1}$
+		\item For each $i \in \{1,2,3\}$ (in parallel) set\\
+				$\galois{r_i} = \InputGalFrom{\private{r_i}{i}}{i}$
+		\item Compute $\galois{z} = \galois{r_1} \Gadd \galois{r_2} \Gadd
+			\galois{r_3}$
+		\item Return $\galois{z}$.
+	\end{enumerate}
+\end{protocol}
+
+The proof of security is similar to that for multiplication, so we omit it.

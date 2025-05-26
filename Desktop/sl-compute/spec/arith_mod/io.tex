@@ -1,0 +1,59 @@
+\section{Input and Output}
+
+The Modular Arithmetic ABB allows values to be input, either from public values or from values known by a single party.
+We present the following protocols:
+\begin{itemize}
+    \item The {\bf InputModArithmetic} protocol takes as input a public value $x \in \Zp$.
+    Each party sets a default sharing of the value $x$ as the output of this protocol. 
+    Since the parties set their shares locally, this ensures that the protocol generates a consistent sharing of the input value.
+    \item The {\bf InputModArithmeticFrom} protocol allows a party to generate a random and consistent sharing of a private value $x \in \Zp$.
+\end{itemize}
+
+\begin{protocol}[Input]
+	\InputModArith{x}
+	\begin{enumerate}
+        \item Each $P_i$ for $i \in \{1, 2, 3\}$ locally sets its share $(t_i, s_i)$ as follows:
+        \begin{itemize}
+            \item $P_1$ sets $(t_1, s_1) = (x, x)$.
+            \item $P_2$ sets $(t_2, s_2) = (x, 0)$.
+            \item $P_3$ sets $(t_3, s_3) = (0, 0)$. 
+        \end{itemize}
+	\end{enumerate}
+
+	\noindent \InputModArithFrom{x}{i}:
+	\begin{enumerate}
+		\item $P_i$ selects $s_i$ at random from $\Zp$ and computes $s_{i - 1} = x - s_i$.
+		\item $P_i$ sends $s_{i - 1}$ to $P_{i - 1}$ and sends $s_i$ to $P_{i + 1}$.
+		\item $P_{i-1}$ and $P_{i+1}$ set $s_{i+1} = 0$.
+		\item Each party $P_j$ computes $t_j = s_j \MAadd s_{j - 1}$.
+			(That is $t_i = x$, $t_{i + 1} = s_{i}$, $t_{i - 1} = s_{i - 1}$.)
+		\item Each party $P_j$ sets its share as $(t_j, s_j)$.
+	\end{enumerate}
+		Parties output $\modarith{x}$.
+\end{protocol}
+
+Values stored in the Modular Arithmetic ABB can be output, either to all parties or to a single party.
+
+\begin{protocol}[Output]
+	\OutputModArith{\modarith{x}}
+	\begin{enumerate}
+		\item Let $(t_i, s_i)$ be the share held by $P_i$.
+		\item For each $i \in \{1, 2, 3\}$ (in parallel):
+			\begin{enumerate}
+                \item $P_i$ sends $t_i$ to $P_{i + 1}$.
+                \item Upon receiving $t_{i - 1}$ from $P_{i - 1}$, $P_i$ computes $x = s_i \MAadd t_{i - 1}$.
+                \item $P_i$ sends $x$ to $P_{i + 1}$.
+				\item If $P_{i + 1}$ receives a value different from the one computed in Step $(2b)$, $P_{i + 1}$ aborts and sends abort to the other parties.
+				\item If any party receives an abort message, it aborts.
+			\end{enumerate}
+	\end{enumerate}
+
+	\noindent \OutputModArithTo{\modarith{x}}{i}:
+	\begin{enumerate}
+		\item Let $(t_j, s_j)$ be the share held by party $P_j$, for each $j \in \{1, 2, 3\}$.
+		\item $P_{i - 1}$ and $P_{i + 1}$ send $t_{i - 1}$ and $t_{i + 1}$, respectively, to $P_i$.
+		\item $P_i$ checks that $t_{i + 1} \MAadd t_i = t_{i - 1} \MAadd 2 \MAmult s_i$. If yes, it outputs $x = s_i \MAadd t_{i - 1}$.
+        Otherwise, $P_i$ aborts and sends the abort message to the other parties.
+		\item If any party receives an abort message, it aborts.
+	\end{enumerate}
+\end{protocol}

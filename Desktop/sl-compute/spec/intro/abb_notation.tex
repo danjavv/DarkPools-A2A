@@ -1,0 +1,31 @@
+\section{ABB Notation}
+
+When an operation stores a new variable in the ABB, 
+a temporary identifier is created for it.
+This temporary identifier can either be used to assign a new public identifier to
+the variable (e.g. $[z]^{Bi} = Add([x]^{Bi},[y]^{Bi})$)
+or it can be used to reference the variable as an input for another computation
+(e.g. the addition in $MultConst(Add([x]^{Ai}, [y]^{Ai}), c)$).
+Either way we say that the operation \emph{returns} the result,
+where the result is written inside $[\cdot]$-notation.
+For instance ``return $[x+y]$'' means store $x + y$ in the ABB,
+create a temporary identifier to this new variable and return the identifier.
+We often use in-fix notation as short-hand for operations on ABB-stored values.
+For instance, rather than writing $[z]^{Bi} = Add([x]^{Bi}, [y]^{Bi})$, we can simply write
+$[z]^{Bi} = [x]^{Bi} + [y]^{Bi}$.
+
+We also need notation to refer to variables which are private to individual parties.
+This is indicated by placing the variable in square-brackets,
+followed by a \emph{subscript} which indicates which party holds the variable.
+For instance $\private{x}{1}$ indicates that $P_1$ privately holds some variable $x$.
+Note that the label $x$ may be public or may be private to $P_1$.
+Sometimes we also require variables which are \emph{2-private},
+that is they are known to 2 parties, but not the third.
+We again use a subscript, representing a variable held privately by $P_i$ and $P_j$
+as $\twoPrivate{x}{i}{j}$.
+
+Some ABBs data-types hold information stored as another data type.
+For example the BoolInt ABB internally represents the positive integer
+as an array of bits stored in BoolBit.
+We adopt the Java-style object notation \textit{object.variable}
+to represent internal variables stored by an ABB object.

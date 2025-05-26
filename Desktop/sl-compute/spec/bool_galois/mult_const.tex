@@ -1,0 +1,28 @@
+\section{Multiplication by a Public Constant}
+
+Since parties hold (replicated) additive shares of secrets, 
+multiplying by a public constant is simple and requires no communication.
+This assumes that all parties locally have the same definition
+for multiplication in the Galois field \GFtwol,
+which includes that for any $l$ they use the same irreducible polynomial.
+
+\begin{protocol}[Galois Multiplication by a Public Constant]
+	\GalMultConst{\galois{x}}{c}:
+		\begin{enumerate}
+			\item Let $\private{(x_i, x_{i+1})}{i}$
+				be the share of $x$ held by $P_i$.
+			\item $P_i$ computes $z_i = x_i \Gmult c$ and
+				$z_{i+1} = x_{i+1} \Gmult c$.
+			\item $P_i$ sets its shares of the result to be
+				$\private{(z_i, z_{i+1})}{i}$.
+			\item The parties generate a unique consistent
+				public identifier for the result.
+		\end{enumerate}
+\end{protocol}
+
+\textbf{Correctness:}
+The argument for correctness is identical to that of the addition protocol.
+If the protocol has correctly implemented the ABB up to this point,
+the sharing of the honest parties is consistent and correct.
+The honest parties will therefore have a correct and consistent
+sharing of the output.

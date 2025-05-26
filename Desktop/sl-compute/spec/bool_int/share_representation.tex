@@ -1,0 +1,4 @@
+\section{Share Representation}
+
+A boolean integer share represents an integer using a fixed number ($k$) of boolean values. Specifically, a boolean integer share, denoted as 
+$\bint{x}$, corresponds to a vector of Boolean shares $\{\bit{x_i}\}_{i=1,\ldots,k}$. Together, these bits encode the integer $\sum_{i=1}^{k}2^i x_i$. Throughout this paper, the $data$ field of a Boolean integer share will store this vector of Boolean shares. That is, if we define $\bitvec{X} = \{\bit{x_1}, \ldots, \bit{x_k}\}$, then $\bint{x}.data = \bitvec{X}$.

@@ -1,0 +1,34 @@
+\usepackage{amsthm}
+\usepackage[framemethod=tikz]{mdframed}
+\usepackage{aliascnt}
+
+\newtheorem{theorem}{Theorem}[section]
+\newaliascnt{boxctr}{theorem}
+
+\newaliascnt{intfunc}{boxctr}
+\newtheorem{intfunc}[intfunc]{Functionality}
+\aliascntresetthe{intfunc}
+
+\newaliascnt{intprot}{boxctr}
+\newtheorem{intprot}[intprot]{Protocol}
+\aliascntresetthe{intprot}
+
+
+\mdfdefinestyle{boxstylewtitle}{
+	hidealllines=false,
+	innerleftmargin=1em,
+	innerrightmargin=1em,
+	innertopmargin=0.8em,
+	innerbottommargin=1em,
+	skipabove=0pt,
+	skipbelow=0.5em,
+	frametitleaboveskip=0pt,
+	frametitlebackgroundcolor=white,
+	frametitlealignment=\raggedright
+}
+
+\newenvironment{functionality}[1][]{\Needspace{4\baselineskip}\par\intfunc[#1]~\vspace{-1em}\begin{mdframed}[style=boxstylewtitle,frametitle={\hspace*{-1.2em}\smash{\raisebox{-0.25em}{\rlap{\colorbox{white}{Functionality \thesection.\arabic{intfunc}. #1\strut~}}}}}]\em}{\end{mdframed}\endintfunc}
+
+\newenvironment{protocol}[1][]{\Needspace{4\baselineskip}\par\intfunc[#1]~\vspace{-1em}\begin{mdframed}[style=boxstylewtitle,frametitle={\hspace*{-1.2em}\smash{\raisebox{-0.25em}{\rlap{\colorbox{white}{Protocol \thesection.\arabic{intfunc}. #1\strut~}}}}}]\em}{\end{mdframed}\endintfunc}
+
+

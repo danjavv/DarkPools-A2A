@@ -1,0 +1,20 @@
+\section{IfThenElse}
+
+The operation IfThenElse from the BoolBit ABB can easily be extended to 
+allow IfThenElse statements over Boolean-shared integers.
+In this case, the condition is still a BoolBit, 
+however, the potential assigned values are BoolInts.
+
+\begin{protocol}[IfThenElse]
+
+	$\IfThenElse{\bit{c}}{\bint{x}}{\bint{y}}$:\\
+	\indent $\bint{x'}, \bint{y'}=$ EqualizeLength$(\bint{x}, \bint{y})$ \\
+	\indent $\bitvec{X} = $Int2BitArr$(\bint{x'})$ \\
+	\indent $\bitvec{Y} = $Int2BitArr$(\bint{y'})$ \\
+	\indent $\bitvec{Z} = map($IfThenElse$, \bit{c}, \bitvec{X}, \bitvec{Y})$ \\
+	\indent $\bint{z} = $BitArr2Int$(\bitvec{Z})$ \\
+	\indent return $\bint{z}$
+
+\end{protocol}
+
+

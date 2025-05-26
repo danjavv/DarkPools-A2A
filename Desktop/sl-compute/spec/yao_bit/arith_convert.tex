@@ -1,0 +1,17 @@
+\section{Arithmetic Share Conversion}
+This section describes the conversion between arithmetic shares and Yao shares, following the approach outlined in \cite{CCS:MohRin18}. The key idea is to use Boolean (bit-wise) shares as an intermediate representation to bridge the two sharing formats.
+
+Given an arithmetic share of a value $x \in \mathbb{Z}2^\ell$, the corresponding Yao share is obtained by first computing the bit decomposition of $x$, i.e., expressing it as $\vec{x} = (x_1, x_2, \ldots, x_\ell) \in {0,1}^\ell$ such that $x = \sum_{i=1}^{\ell} x_i \cdot 2^{i-1}$. The Yao share of $x$ is then defined as the collection of Yao shares for each bit $x_i$, preserving their order in the decomposition. In the below description, we assume that the input ids of the arithmetic share are from $i$ to $i+\ell$.
+
+\begin{protocol}[Arithmetic Share Conversion]
+	$\ArithtoYao{\aint{x}}{i}{crs}{\vec{e} \footnote{The encoding vector is known to garblers only, and is obtained during the setup phase.}}$: \\
+	\indent $\bitvec{X} = \ArithtoBitArr{\aint{x}}$ \\
+	\indent $\vec{O} = map(BittoYao, \bitvec{X}, \{i, \ldots, i+\ell \}, crs, \vec{e})$ \\
+	\indent return $\vec{O}$ \\
+	
+	\noindent
+	$\YaotoArith{(\vec{W^0}, \Delta)}{\vec{W^x}}$: \\
+	\indent $\bitvec{X} = map(YaotoBit, (\vec{W^0}, \Delta), \vec{W^x})$ \\
+	\indent $\aint{x} = \BitArrtoArith{\bitvec{X}}$ \\
+	\indent return $\aint{x}$ \\
+\end{protocol}

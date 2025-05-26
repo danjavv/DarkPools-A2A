@@ -1,0 +1,17 @@
+\section{Share Representation}
+
+Galois-type objects are represented using Replicated Secret Sharing.
+Specifically, to store some variable $x \in \GFtwol$,
+there are three shares $x_1, x_2, x_3 \in \GFtwol$,
+which satisfy $x_1 \Gadd x_2 \Gadd x_3 = x$.
+Party $P_i$ holds shares $x_i$ and $x_{i+1}$.
+
+Security is defined in terms of the operation protocols being 
+simulatable if they were replaced by the Galois ABB functionality.
+In short, shares that are the result of an Input should appear
+completely random to a single party (conditioned on any 
+pre-existing knowledge they have of the input variable).
+Correlations between shares of calculated values
+(e.g. the input and output shares in an addition)
+should reveal no further information to any single party beyond 
+which calculation was performed.

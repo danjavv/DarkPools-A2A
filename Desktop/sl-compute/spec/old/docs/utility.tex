@@ -1,0 +1,315 @@
+\section{Utility}
+\label{sec:utility}
+
+\subsection{Arithmetic Share to Decimal Share}
+\label{sec:arithmetic_share_to_decimal_share}
+
+This function converts a value represented as an $\ArithmeticShare$ into its equivalent $\DecimalShare$. In the $\ArithmeticShare$ representation, the numbers are scaled by a factor of $2^{FL}$ (where $FL$ represents the constant $FRACTION\_LENGTH$), while in the representation $\DecimalShare$, the numbers are scaled by a factor of $100$.
+
+To perform the conversion, the input $\ArithmeticShare$ value is first scaled by $100$ (to align with the $\DecimalShare$ scaling) and then divided by $2^{FL}$ (to undo the $\ArithmeticShare$ scaling). The resulting value is the equivalent $\DecimalShare$.
+
+\begin{protocol}[ArithmeticShareToDecimalShare$({[a]^A})$]
+	${[{temp\_a}]^A} =$ ${[a]^A} \cdot 100$\\
+	${[{temp\_b}]^A} =$ DefaultArithmeticShare$(2^{FL})$\\
+        return LongDivision$({[{temp\_a}]^A}, {[{temp\_b}]^A})$
+\end{protocol}
+
+\subsection{Decimal Share to Arithmetic Share}
+\label{sec:decimal_share_to_arithmetic_share}
+
+Building on the logic from Section \ref{sec:arithmetic_share_to_decimal_share}, converting a $\DecimalShare$ into its equivalent $\ArithmeticShare$ involves two steps. First, the input is scaled by $2^{FL}$ to match the scaling used in the $\ArithmeticShare$ representation. Then, the result is divided by $100$ to reverse the scaling applied in the $\DecimalShare$ representation.
+
+\begin{protocol}[DecimalShareToArithmeticShare$({[a]^A})$]
+	${[{temp\_a}]^A} =$ ${[a]^A} \cdot 2^{FL}$\\
+	${[{temp\_b}]^A} =$ DefaultArithmeticShare$(100)$\\
+        return LongDivision$({[{temp\_a}]^A}, {[{temp\_b}]^A})$
+\end{protocol}
+
+\subsection{Long Division}
+\label{sec:long_division}
+
+This function takes two integers (say $a$ and $b$) represented by $\ArithmeticShare$ values as input and outputs the $\ArithmeticShare$ representation of $a / b$. The function converts the inputs to $\BinaryStringShare$s and then follows the standard Long division method for boolean values in a secret shared format. Once the division is performed, the result is converted back to an $\ArithmeticShare$. It checks whether $b = 0$ and if true, then uses protocol from Section \ref{sec:multiplexer_array} to output a default $\ArithmeticShare$ of $0$. The function includes a check for zero to handle the special case where $b=0$. If $b = 0$, protocol from Section \ref{sec:multiplexer_array} is used to output a default $\ArithmeticShare$ value of $0$.
+
+\begin{protocol}[LongDivision$({[a]^A}, {[b]^A})$]
+	${[\vec{abin}]^B} =$ A2B$({[a]^A})$\\
+	${[\vec{bbin}]^B} =$ A2B$({[b]^A})$\\
+	${[\vec{zero}]^B} =$ DefaultBinaryShare$(0)$\\
+	${[zerocomp]^B} =$ CompareEqual$([\vec{zero}]^B, [\vec{bbin}]^B)$\\
+	${[\vec{quotient}]^B} =$ DefaultBinaryShare$(0)$\\
+	${[\vec{remainder}]^B} =$ DefaultBinaryShare$(0)$\\
+	for $i = 0, \ldots, l - 1$:\\
+	\indent ${[\vec{remainder}]^B} = $ LeftShift \footnote{The LeftShift function shifts the first input, a $\BinaryStringShare$, to the left by the number of positions specified by the second input.}
+    $({[\vec{remainder}]^B}, 1)$\\
+	\indent ${[\vec{remainder}_i]^B} = [\vec{abin_i}]^B$\\
+	\indent ${[comp]^B} =$ CompareGreaterThanOrEqualTo$([\vec{remainder}]^B, [\vec{bbin}]^B)$\\
+	\indent ${[remainder]^A} =$ B2A$([\vec{remainder}]^B)$\\
+        \indent ${[sub]^A} = {[remainder]^A} - {[b]^A}$\\
+        \indent ${[\vec{sub}]^B} =$ A2B$([sub]^A)$\\
+        \indent ${[\vec{remainder}]^B} = $ MultiplexerArray$([comp]^B, {[\vec{sub}]^B}, {[\vec{remainder}]^B})$\\
+	\indent ${[\vec{quotient}_i]^B} = [comp]^B$\\
+	${[\vec{quotient}]^B} =$ LeftShift$({[\vec{quotient}]^B}, FL\footnote{\text{$FL$ here refers to the variable $FRACTION\_LENGTH$}}
+    )$\\
+	for $i = 0, \ldots, FL$:\\
+	\indent ${[\vec{remainder}]^B} = $ LeftShift$({[\vec{remainder}]^B}, 1)$\\
+	\indent ${[\vec{remainder}_i]^B} = $ DefaultBinaryShare$(false)$\\
+	\indent ${[comp]^B} =$ CompareGreaterThanOrEqualTo$([\vec{remainder}]^B, [\vec{bbin}]^B)$\\
+	\indent ${[remainder]^A} =$ B2A$([\vec{remainder}]^B)$\\
+        \indent ${[sub]^A} = {[remainder]^A} - {[b]^A}$\\
+        \indent ${[\vec{sub}]^B} =$ A2B$([sub]^A)$\\
+        \indent ${[\vec{remainder}]^B} = $ MultiplexerArray$([comp]^B, {[\vec{sub}]^B}, {[\vec{remainder}]^B})$\\
+	\indent ${[\vec{quotient}_{FL - i - 1}]^B} = [comp]^B$\\
+        ${[\vec{quotient}]^B} =$ MultiplexerArray$([zerocomp]^B, {[\vec{zero}]^B}, {[\vec{quotient}]^B})$\\
+        return B2A$({[\vec{quotient}]^B})$
+\end{protocol}
+
+\subsection{Multiplexer Bit}
+\label{sec:multiplexer_bit}
+
+This function takes three $\BinaryShare$s as input, $choice$, $a$ and $b$. It outputs $a$ if $choice$ is $\true$ and $b$ otherwise. The protocol operates as follows:
+
+\begin{enumerate}
+    \item Compute the AND of $choice$ and $a$, resulting in a $\BinaryShare$ that retains the value of $a$ when $choice$ is $\true$.
+    \item Compute the AND of the inverse of $choice$ and $b$, producing a $\BinaryShare$ that retains the value of $b$ when $choice$ is $\false$.
+    \item XOR the two results to combine the contributions of $a$ and $b$ based on the value of $choice$, yielding the final output.
+\end{enumerate}
+
+\begin{protocol}[MultiplexerBit$({[choice]^B}, {[a]^B}, {[b]^B})$]
+	${[{temp\_a}]^B} =$ ${[choice]^B} \cdot {[a]^B}$\\
+	${[{temp\_b}]^B} =$ Inverse$({[choice]^B}) \cdot {[b]^B}$\\
+        return ${[{temp\_a}]^B} \oplus {[{temp\_b}]^B}$
+\end{protocol}
+
+\subsection{Multiplexer Array}
+\label{sec:multiplexer_array}
+
+This function closely resembles protocol from Section \ref{sec:multiplexer_bit}, with the primary difference being the size of the inputs $a$ and $b$, which are fixed-length $\BinaryStringShare$s (call it $l$). The protocol is adapted as follows:
+\begin{enumerate}
+    \item For each bit in $a$ and $b$, an AND operation is performed individually between $choice$ and the corresponding bit of $a$, as well as between the inverse of $choice$ and the corresponding bit of $b$.
+    \item The resulting $\BinaryStringShare$s from these bitwise operations are then XORed bit by bit to produce the final output.
+\end{enumerate}
+
+\begin{protocol}[MultiplexerArray$({[choice]^B}, {[\vec{a}]^B}, {[\vec{b}]^B})$]
+	$Predicate([a]^B) =$ ${[choice]^B} \cdot {[a]^B}$\\
+	${[\vec{temp\_a}]^B} =$ Predicate$({[\vec{a}]^B})$\\
+	$Predicate([b]^B) =$ Inverse$({[choice]^B}) \cdot {[b]^B}$\\
+	${[\vec{temp\_b}]^B} =$ Predicate$({[\vec{b}]^B})$ \footnote{The two predicates are executed in parallel} \\ 
+        return ${[\vec{temp\_a}]^B} \oplus {[\vec{temp\_b}]^B}$
+\end{protocol}
+
+\subsection{Multiplexer Vec}
+\label{sec:multiplexer_vec}
+
+This function extends protocol from Section \ref{sec:multiplexer_array} to handle inputs of variable sizes instead of fixed sizes. The protocol execution remains identical, with the addition of an initial step to ensure that the sizes of $a$ and $b$ are equal. The detailed protocol is omitted for brevity.
+
+\subsection{Shave Data}
+\label{sec:shave_data}
+
+This section describes two functions designed to trim unnecessary data while retaining the essential parts of the input. The input is a vector of $\BinaryStringShare$s, where each $\BinaryStringShare$ represents a byte of shared inputs. The protocol operates as follows:
+
+\begin{enumerate}
+    \item The parties initialize a default share of zero, denoted as $curr$. Depending on the specific function, they iterate through the vector of $\BinaryStringShare$s from the front or the back. During each iteration, the current $\BinaryStringShare$ is compared with a default share of a predefined delimiter using protocol from Section \ref{sec:compare_eq}. 
+    \item The result of the comparison, a $\BinaryShare$ value ($\false$ or $\true$), is converted into a $\ArithmeticShare$ value ($0$ or $1$ resp.). This value is then added to $curr$, effectively maintaining a count of delimiter matches encountered so far.
+    \item The updated $curr$ is converted back into a $\BinaryStringShare$ and compared with a fixed threshold count using protocol from Section \ref{sec:compare_ge}. The result of this comparison is reconstructed, and if it evaluates to \texttt{true}, the function outputs the remaining portion of the vector starting from the current position.
+\end{enumerate}
+
+\begin{protocol}[ShaveData$(input: \vec{\BinaryStringShare})$]
+	${[\vec{delim}]^B} =$ DefaultBinaryShare$(delimiter)$\\
+	${[\vec{count}]^B} =$ DefaultBinaryShare$(count)$\\
+	${[curr]^A} =$ DefaultArithmeticShare$(0)$\\
+	for $input_i$ in $input$: \footnote{Iteration can be forward or reverse depending on whether the unnecessary data is at the front or back of the array respectively.}\\
+	\indent ${[comp]^B} =$ CompareEqual$(input_i, [\vec{delim}]^B)$\\
+	\indent ${[\vec{add}]^B} =$ DefaultBinaryShare$(0)$\\
+	\indent ${[\vec{add_{FL}}]^B} = [comp]^B$ \footnote{$FL$ here refers to the variable $FRACTION\_LENGTH$}\\
+	\indent ${[add]^A} =$ B2A$([\vec{add}]^B)$\\
+	\indent ${[curr]^A} = {[curr]^A} + {[add]^A}$\\
+	\indent ${[\vec{curr}]^B} = $ A2B$({[curr]^A})$\\
+	\indent ${[gecomp]^B} =$ CompareGreaterThanOrEqualTo$([\vec{curr}]^B, [\vec{count}]^B)$\\
+	\indent $gecomp =$ Reconstruct$({[gecomp]^B})$\\
+	\indent $input.\text{remove}(input_i)$\\
+        \indent if $gecomp$:\\
+        \indent \indent break\\
+        return $input$
+\end{protocol}
+
+\subsection{Parse Category}
+\label{sec:parse_category}
+
+The category is assumed to be a numeric value encoded in the first byte of the narration field. It is further assumed that it is stored in plaintext form. Consequently, the parsing protocol involves a single reconstruction of this byte, followed by subtracting 48 from the reconstructed value to convert it from its ASCII representation to its plain numeric form. For simplicity, the protocol details are omitted.
+
+\subsection{Parse Number}
+\label{sec:parse_number}
+This function takes a $\BinaryStringShare$ as input, where the first byte contains a numeric value in ASCII format, and the remaining bytes consist of a predefined padding character. The function outputs the numeric value in an $\ArithmeticShare$ format.
+
+To achieve this, the function isolates the first byte of the input and transposes it into another $\BinaryStringShare$, scaling its value by $2^{FRACTION\_LENGTH}$. The scaled value is then converted to an $\ArithmeticShare$ using the A2B protocol. Finally, 48 is subtracted from the result to convert the ASCII representation into its numeric form. For simplicity, the protocol details are omitted.
+
+\subsection{Parse Date}
+\label{sec:parse_date}
+This function takes a vector of $\BinaryStringShare$s as input, where the first 33 bytes represent a timestamp in the format $\mathsf{yyyy-mm-ddThh:mm:ss.sss(+/-)hh:mm}$, and the remaining bytes are filled with a predefined padding character. The output is the timestamp, represented as a $\TimeStamp$ structure.
+
+The function uses protocol from Section \ref{sec:parse_number} to parse the numeric characters from the timestamp as $\ArithmeticShare$s, scales them as necessary, and adds them to their respective fields in the $\TimeStamp$ structure. The $(+/-)$ sign, stored in the $\mathsf{plus}$ field of the timestamp, is represented as a $\BinaryShare$ that indicates whether the byte corresponds to a plus or minus sign. This byte is compared with the default $\BinaryStringShare$ of the plus character, and the comparison result is stored in the $\mathsf{plus}$ field. For simplicity, the protocol details are omitted.
+
+\subsection{Parse Plain Decimal}
+\label{sec:parse_plain_decimal}
+
+This protocol closely resembles protocol from Section \ref{sec:parse_number}, with the key difference being that the output is a $\DecimalShare$ that is not scaled by 100. An additional step distinguishes this protocol: the scaling factor of $2^{FRACTION\_LENGTH}$ is removed by dividing the result by its default sharing. The protocol details are omitted here for brevity.
+
+\subsection{Parse Decimal}
+\label{sec:parse_decimal}
+
+This function is used to parse a vector of $\BinaryStringShare$s of format \\$xxxxx.yzzzzzzz$ or $xxxxx.yyzzzzzz$, where $x$ and $y$ are numerals and $z$ is a padding character. The output of this function is a $\DecimalShare$. The protocol is executed as follows:
+
+\begin{enumerate} 
+    \item The protocol maintains three $\BinaryShare$ values to track the state of the current character: whether it is the decimal point ($point$), the first number after the decimal point ($frac1$), or the second number after the decimal point ($frac2$). Additionally, a $\DecimalShare$ variable, initialized to $0$ (referred to as $final$), is used to store the final result. 
+    \item The parties iterate through the input, comparing the current character with the default sharing of a decimal point and the padding character, resulting in comparison outputs ($pointcomp$ and $padcomp$).
+    \item Based on $pointcomp$ and the initial states, the three $\BinaryShare$ values ($point$, $frac1$, and $frac2$) are updated accordingly. To handle cases where the second byte after the decimal point is a padding character, the parties compute $mul10$ by multiplying $padcomp$ with $frac2$. 
+    \item The current character is parsed into a $\DecimalShare$ using protocol from Section \ref{sec:parse_plain_decimal}. To update $final$, the following cases are considered: 
+    \begin{itemize} 
+        \item When the current character is a numeric value, $newval$ is computed as $final$ scaled by 10 and added to the parsed decimal value of the current character. 
+        \item When the second character after the decimal point is a padding character, $final10$ is computed as $final$ scaled by 10. 
+    \end{itemize} 
+    \item Finally, $final$, $final10$, and $newval$ are converted into binary representations to serve as inputs to a multiplexer. protocol from Section \ref{sec:multiplexer_array} is then applied to determine the correct $final$ value for the current character. The resulting value is output as a $\DecimalShare$. 
+\end{enumerate}
+
+\begin{protocol}[ParseDecimal$(input: \vec{\BinaryStringShare})$]
+	${[\vec{dot}]^B} =$ DefaultBinaryShare$(dotcharacter)$\\
+	${[\vec{pad}]^B} =$ DefaultBinaryShare$(padcharacter)$\\
+	${[point]^B} =$ DefaultBinaryShare$(false)$\\
+	${[frac1]^B} =$ DefaultBinaryShare$(false)$\\
+	${[frac2]^B} =$ DefaultBinaryShare$(false)$\\
+	${[final]^D} =$ DefaultDecimalShare$(0)$\\
+	for $input_i$ in $input$:\\
+	\indent ${[pointcomp]^B} =$ CompareEqual$(input_i, [\vec{dot}]^B)$\\
+	\indent ${[padcomp]^B} =$ CompareEqual$(input_i, [\vec{pad}]^B)$\\
+	\indent ${[frac2]^B} = {[frac1]^B}$\\
+	\indent ${[frac1]^B} = {[point]^B}$\\
+	\indent ${[point]^B} = {[pointcomp]^B}$\\
+	\indent ${[mul10]^B} = {[padcomp]^B} \cdot {[frac2]^B}$\\
+	\indent ${[num]^D} =$ ParsePlainDecimal$(input_i)$\\
+	\indent ${[newval]^D} = {[final]^D} \cdot 10 + {[num]^D}$\\
+	\indent ${[mul10]^D} = {[final]^D} \cdot 10$\\
+        \indent ${[\vec{final}]^B} = $ A2B$([final]^D)$ \footnote{The input of A2B is supposed to be a $\ArithmeticShare$, but we can input a $\DecimalShare$ by simply copying the two components of the input $\DecimalShare$ to an $\ArithmeticShare$.}\\
+        \indent ${[\vec{newval}]^B} = $ A2B$([newval]^D)$\\
+        \indent ${[\vec{mul10}]^B} = $ A2B$([mul10]^D)$\\
+        \indent ${[\vec{newval}]^B} = $ MultiplexerArray$([pointcomp]^B, {[\vec{final}]^B}, {[\vec{newval}]^B})$\\
+        \indent ${[\vec{newval}]^B} = $ MultiplexerArray$([padcomp]^B, {[\vec{final}]^B}, {[\vec{newval}]^B})$\\
+        \indent ${[\vec{final}]^B} = $ MultiplexerArray$([mul10]^B, {[\vec{mul10}]^B}, {[\vec{newval}]^B})$\\
+        \indent ${[final]^D} = $ B2A$({[\vec{final}]^B})$\footnote{The above reasoning for the input of A2B holds for the output of B2A as well.}\\
+        return ${[final]^D}$
+\end{protocol}
+
+\subsection{Parse Float}
+\label{sec:parse_float}
+
+This function is used to parse a vector of $\BinaryStringShare$s of format \\$xxxxxx.yyyyyzzzz$, where $x$ and $y$ are numerals and $z$ is a padding character. The output of this function is an $\ArithmeticShare$. The protocol is executed as follows:
+
+\begin{enumerate} 
+    \item A $\BinaryShare$ variable ($point$) is initialized to track whether the decimal point has been encountered. Two $\ArithmeticShare$ variables, $final$ and $frac$, are initialized to $0$. Here, $final$ accumulates the parsed numerical value, and $frac$ tracks the scaling factor for dividing $final$ according to the number of numerals after the decimal point.
+    \item The parties iterate through the input, comparing the current character with the default sharing of a decimal point and the padding character, resulting in comparison outputs ($pointcomp$ and $padcomp$).
+    \item The $\BinaryShare$ variable $point$ is updated as the OR of its previous value and $pointcomp$, indicating whether the decimal point has been encountered. To detect numerals occurring after the decimal point, $fraccomp$ is computed as the AND of $point$, the inverse of $pointcomp$, and the inverse of $padcomp$.
+    \item The current character is parsed into an $\ArithmeticShare$ using protocol from Section \ref{sec:parse_number}. Depending on the state:
+    \begin{itemize}
+        \item If the character is a numeral, $newval$ is calculated as $final$ scaled by 10 and added to the parsed value of the current character.
+        \item If $fraccomp$ is $\true$, indicating that a numeral occurs after the decimal point, $frac$ is scaled by 10.
+    \end{itemize}
+    \item The values $final$, $frac$, and intermediate results are converted to binary and passed as inputs to instances of protocol from Section \ref{sec:multiplexer_array} which determines the correct $final$ and $frac$ values for the current character. 
+    \item Once the iteration completes, the parties compute the output by dividing $final$ by $frac$ using protocol from Section \ref{sec:long_division}.
+\end{enumerate}
+
+\begin{protocol}[ParseFloat$(input: \vec{\BinaryStringShare})$]
+	${[\vec{dot}]^B} =$ DefaultBinaryShare$(dotcharacter)$\\
+	${[\vec{pad}]^B} =$ DefaultBinaryShare$(padcharacter)$\\
+	${[point]^B} =$ DefaultBinaryShare$(false)$\\
+	${[final]^D} =$ DefaultDecimalShare$(0)$\\
+	${[frac]^D} =$ DefaultDecimalShare$(0)$\\
+	for $input_i$ in $input$:\\
+	\indent ${[pointcomp]^B} =$ CompareEqual$(input_i, [\vec{dot}]^B)$\\
+	\indent ${[padcomp]^B} =$ CompareEqual$(input_i, [\vec{pad}]^B)$\\
+	\indent ${[point]^B} = ({[pointcomp]^B} \cdot {[point]^B}) \oplus ({[pointcomp]^B} \oplus {[point]^B})$\\
+	\indent ${[fraccomp]^B} = \text{Inverse}({[pointcomp]^B}) \cdot \text{Inverse}({[padcomp]^B}) \cdot {[point]^B}$\\
+	\indent ${[tenfrac]^A} = {[frac]^A} \cdot 10$\\
+        \indent ${[\vec{tenfrac}]^B} = $ A2B$([tenfrac]^B)$\\
+        \indent ${[\vec{frac}]^B} = $ A2B$([frac]^B)$\\
+	\indent ${[newval]^A} = {[final]^A} \cdot 10 + {[num]^A}$\\
+        \indent ${[\vec{final}]^B} = $ A2B$([final]^A)$\\
+        \indent ${[\vec{newval}]^B} = $ A2B$([newval]^A)$\\
+        \indent ${[\vec{newval}]^B} = $ MultiplexerArray$([pointcomp]^B, {[\vec{final}]^B}, {[\vec{newval}]^B})$\\
+        \indent ${[\vec{final}]^B} = $ MultiplexerArray$([padcomp]^B, {[\vec{final}]^B}, {[\vec{newval}]^B})$\\
+        \indent ${[\vec{frac}]^B} = $ MultiplexerArray$([fraccomp]^B, {[\vec{tenfrac}]^B}, {[\vec{frac}]^B})$\\
+        \indent ${[final]^A} = $ B2A$({[\vec{final}]^B})$\\
+        \indent ${[frac]^A} = $ B2A$({[\vec{frac}]^B})$\\
+        return LongDivision$({[final]^A}, {[frac]^A})$
+\end{protocol}
+
+\subsection{Get Transaction Entry}
+\label{sec:get_transaction_entry}
+
+This function processes the output of the split and pad operation to extract transaction entries from the data, organizing it according to predefined fields and values. The function outputs a $\TransactionEntry$, with the following steps:
+\begin{itemize}
+    \item String data values: These are assigned directly to their respective fields without additional processing.
+    \item Date values: These are parsed using protocol from Section \ref{sec:parse_date} to convert the input into $\TimeStamp$ types for accurate representation.
+    \item Financial data values: These are processed using protocol from Section \ref{sec:parse_decimal}, transforming the input into $\DecimalShare$ types to ensure proper scaling and representation.
+\end{itemize}
+The protocol details are omitted here for brevity.
+
+\subsection{Get Data}
+\label{sec:get_data}
+
+This function takes the remote and our nonce, the remote public key and the ciphertext as plaintext inputs and our private key as secret-shared inputs. It outputs a vector of $\TransactionEntry$ values as the output. The function first uses the ThresholdDecrypt function to decrypt the incoming ciphertext to get the raw secret-shared string. Then secret-shared parsing is done on the data using the SplitAndPad function at two levels with different delimiters and record sizes. This is directly input to the GetTransactionEntry function to output a vector of transaction entries. The protocol details are omitted here for brevity.
+
+\subsection{Serialize Input Table Entry} 
+\label{sec:serialize_input_table_entry}
+
+This function converts an $\InputTableEntry$ into a vector of $\BinaryStringShare$ values. The protocol is executed as follows:
+
+\begin{enumerate}
+    \item An output $\BinaryStringShare$ is initialized to store all fields in binary format.
+    \item Fields of type $\BinaryShare$ are stored directly without modification.
+    \item Fields of type $\ArithmeticShare$ are converted into vectors of $\BinaryShare$ using the A2B protocol and then stored.
+    \item Fields of type $\BinaryStringShare$ are appended directly to the output vector.
+    \item Plaintext fields are ignored as they do not require serialization.
+    \item Once all fields are processed, the output vector is divided into chunks of size $FIELD\_SIZE$ and returned.
+\end{enumerate}
+
+Detailed protocol steps are omitted for brevity.
+
+\subsection{Deserialize Input Table Entry} 
+\label{sec:deserialize_input_table_entry}
+
+This function performs the reverse operation of protocol from Section \ref{sec:serialize_input_table_entry}, reconstructing an $\InputTableEntry$ from a vector of $\BinaryStringShare$ values. The protocol is executed as follows:
+
+\begin{enumerate}
+    \item $\BinaryShare$s corresponding to each field are isolated from the input vector in the same order as they were stored during serialization.
+    \item Fields of type $\ArithmeticShare$ are reconstructed using the B2A protocol.
+    \item Fields of type $\BinaryShare$ are directly recovered without additional processing.
+    \item Fields of type $\BinaryStringShare$ are reassembled into a single $\BinaryStringShare$ value.
+    \item Plaintext fields are initialized to default values, as they are not part of the serialized data.
+    \item Once all fields are processed, they are encapsulated in a $\InputTableEntry$ value, which is then returned as the output.
+\end{enumerate}
+
+Detailed protocol steps are omitted for brevity.
+
+\subsection{Serialize Input Table} 
+\label{sec:serialize_input_table}
+
+This function converts an $\InputTable$, which is a vector of $\InputTableEntry$ values, into a $\SerializedInputTable$, which is a vector of vectors of $\BinaryStringShare$ values.
+
+\begin{enumerate}
+    \item For each $\InputTableEntry$ in the $\InputTable$, protocol from Section \ref{sec:serialize_input_table_entry} is invoked to serialize the entry.
+    \item The serialized outputs are collected into a vector.
+    \item This vector is encapsulated within the $\SerializedInputTable$ structure and returned as the final output.
+\end{enumerate}
+
+Detailed protocol steps are omitted for brevity.
+
+\subsection{Deserialize Input Table} 
+\label{sec:deserialize_input_table}
+
+This function reconstructs an $\InputTable$ from a $\SerializedInputTable$, reversing the serialization process described in protocol from Section \ref{sec:serialize_input_table}.
+
+\begin{enumerate}
+    \item Each vector of $\BinaryStringShare$ values in the $\SerializedInputTable$ is processed using protocol from Section \ref{sec:deserialize_input_table_entry} to deserialize it into an $\InputTableEntry$.
+    \item The deserialized entries are stored in an output vector.
+    \item This vector is encapsulated within the $\InputTable$ structure and returned as the final output.
+\end{enumerate}
+
+Detailed protocol steps are omitted for brevity.

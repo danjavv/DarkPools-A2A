@@ -1,0 +1,280 @@
+\section{Conversions}
+
+\subsection{Arithmetic to Boolean}
+\begin{algorithm}[H]
+\floatname{algorithm}{A2B}
+\renewcommand{\thealgorithm}{}
+\caption{$[x]^\Arithmetic \rightarrow [\vec{x}]^\Boolean$}
+\label{protocol1}
+The input of this protocol is an arithmetic sharing $[x]^\Arithmetic = (x_1, x_2, x_3)$ of a value $x \in \Z_{2^p}$. The protocol converts it to a vector of binary shared bits $x^{(1)}, \ldots, x^{p} \in \{0, 1\}$ such that $x = \sum_{i = 1}^{i = p} 2^{i - 1} x^{(i)}$. This protocol uses a $\FA$ (Full Adder) and a $\PPA$ (Parallel Prefix Adder).
+\bigskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+%%%%
+%%%%
+\STATE Locally convert $[x]^\Arithmetic$ to $[x_1]^\Boolean = (x_1, 0, 0)$, $[x_2]^\Boolean = (0, x_2, 0)$ and $[x_3]^\Boolean = (0, 0, x_3)$.
+%%%%
+%%%%
+\STATE for $i = 0$ to $i = p - 1$ (\textcolor{blue}{in parallel}):
+\begin{equation*}
+    \FA([x_1]^{(i)}, [x_2]^{(i)}, [x_3]^{(i - 1)}) \rightarrow ([c]^{(i)}, [s]^{(i)})
+\end{equation*} 
+where $c^{(i)}, s^{(i)}$ denote the $i$th bit of the bitstrings $c$ and $s$.
+\medskip
+%%%%
+%%%%
+\STATE $\PPA(2[c]^\Boolean, [s]^\Boolean) \rightarrow [x]^\Boolean$ 
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Arithmetic to Yao}
+\begin{algorithm}[H]
+\floatname{algorithm}{A2Y}
+\renewcommand{\thealgorithm}{}
+\caption{$[x]^\Arithmetic \rightarrow [x]^\Yao$}
+\label{protocol1}
+The input of this protocol is an arithmetic sharing $[x]^\Arithmetic = (x_1, x_2, x_3)$ of a value $x \in \Z_{2^p}$. The protocol converts it to a Yao sharing of $x$. This protocol makes use of the functionalities $\ShareYao$ and $\GC$.
+\smallskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+\STATE Each share-holder holding the input $x_i$ for $i \in [1, 3]$ generates the Yao sharing $[x_i]^\Yao$ of $x_i$ using $\ShareYao$ as follows:
+\begin{equation*}
+    \ShareYao(x_i) \rightarrow [x_i]^\Yao
+\end{equation*}
+%%%%
+%%%%
+\STATE Each share-holder computes the Yao sharing $[x]^\Yao$ of $x$ using the functionality $\GC$ as follows:
+\begin{equation*}
+    \GC(f([x_1]^\Yao, [x_2]^\Yao, [x_3]^\Yao)) \rightarrow [x]^\Yao
+\end{equation*}
+where $f([x_1]^\Yao, [x_2]^\Yao, [x_3]^\Yao) = [x_1]^\Yao + [x_2]^\Yao + [x_3]^\Yao$
+%%%%
+%%%%
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Elliptic Curve to Arithmetic}
+\begin{algorithm}[H]
+\floatname{algorithm}{EC2A}
+\renewcommand{\thealgorithm}{}
+\caption{$[A]^\EllipticCurve \rightarrow [A]^\Arithmetic$}
+\label{protocol1}
+The input of this protocol is an elliptic curve sharing $(A_1 = (x_1, y_1), A_2 = (x_2, y_2), A_3 = (x_3, y_3))$ of a point $A = (x, y)$ on the elliptic curve $\EC = (\G, G, p)$. The protocol converts it to an arithmetic sharing of $x$ and $y$. This protocol makes use of the functionalities $\ECADD$ and $\ShareArithmetic$.
+\smallskip
+\begin{algorithmic}[1]
+\STATE Each share-holder secret shares its input $A_i = (x_i, y_i)$ to an arithmetic sharing using $\ShareArithmetic$ as follows:
+\begin{equation*}
+    \ShareArithmetic(x_i) \rightarrow [x_i]^\Arithmetic,
+\end{equation*}
+\begin{equation*}
+    \ShareArithmetic(y_i) \rightarrow [y_i]^\Arithmetic
+\end{equation*} such that $[X_i]^\Arithmetic = ([x_i]^\Arithmetic, [y_i]^\Arithmetic)$
+%%%%
+%%%%
+\medskip
+\STATE $\ECADD([X_1]^\Arithmetic, [X_2]^\Arithmetic) \rightarrow [\INT]^\Arithmetic$
+%%%%
+%%%% 
+\medskip
+\STATE $\ECADD([\INT]^\Arithmetic, [X_3]^\Arithmetic) \rightarrow [A]^\Arithmetic$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Elliptic Curve to Boolean}
+\begin{algorithm}[H]
+\floatname{algorithm}{EC2B}
+\renewcommand{\thealgorithm}{}
+\caption{$[A]^\EllipticCurve \rightarrow [A]^\Boolean$}
+\label{protocol1}
+The input of this protocol is an elliptic curve sharing $(A_1 = (x_1, y_1), A_2 = (x_2, y_2), A_3 = (x_3, y_3))$ of a point $A = (x, y)$ on the elliptic curve $\EC = (\G, G, p)$. The protocol converts it to a vector of binary shared bits $x^{(1)}, \ldots, x^{(\log p)} \in \{0, 1\}$ and $y^{(1)}, \ldots, y^{(\log p)} \in \{0, 1\}$ such that $x = \sum_{i = 1}^{i = \log p} 2^{i - 1} x^{(i)}$ and $y = \sum_{i = 1}^{i = \log p} 2^{i - 1} y^{(i)}$. This protocol makes use of $\ECtoA$ and $\AtoB$ protocols.
+\smallskip
+\begin{algorithmic}[1]
+\STATE $\ECtoA([A]^\EllipticCurve) \rightarrow [A]^\Arithmetic$
+%%%%
+%%%%
+\STATE $(\AtoB([x]^\Arithmetic), \AtoB([y]^\Arithmetic))$ $\rightarrow ([\vec{x}]^\Boolean, [\vec{y}]^\Boolean)$, where $[A]^\Arithmetic = ([x]^\Arithmetic, [y]^\Arithmetic)$.
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Elliptic Curve to Yao}
+\begin{algorithm}[H]
+\floatname{algorithm}{EC2Y}
+\renewcommand{\thealgorithm}{}
+\caption{$[A]^\EllipticCurve \rightarrow [A]^\Yao$}
+\label{protocol1}
+The input of this protocol is an elliptic curve sharing $(A_1 = (x_1, y_1), A_2 = (x_2, y_2), A_3 = (x_3, y_3))$ of a point $A = (x, y)$ on the elliptic curve $\EC = (\G, G, p)$. The protocol converts it to a Yao sharing of $x \in \Z_{2^p}$ and $y \in \Z_{2^p}$. This protocol makes use of $\ECtoA$ and $\AtoY$ protocols.
+\smallskip
+\begin{algorithmic}[1]
+\STATE $\ECtoA([A]^\EllipticCurve) \rightarrow [A]^\Arithmetic$
+%%%%
+%%%%
+\STATE $(\AtoY([x]^\Arithmetic), \AtoY([y]^\Arithmetic))$ $\rightarrow ([x]^\Yao, [y]^\Yao)$, where $[A]^\Arithmetic = ([x]^\Arithmetic, [y]^\Arithmetic)$.
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Boolean to Arithmetic}
+\begin{algorithm}[H]
+\floatname{algorithm}{B2A}
+\renewcommand{\thealgorithm}{}
+\caption{$[\vec{x}]^\Boolean \rightarrow [x]^\Arithmetic$}
+\label{protocol1}
+The input of this protocol is a binary sharing of the bits $x^{(1)}, \ldots, x^{(p)} \in \{0, 1\}$ of a $k$ bit value $x$. The protocol converts it to an arithmetic sharing of $x \in \Z_{2^p}$. This protocol uses a $\FA$ (Full Adder), a $\PPA$ (Parallel Prefix Adder) and a protocol $\RandomBooleanShare$ that takes as input identity of two parties and generates a boolean sharing of a random value known to both the parties.
+\bigskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+\STATE $[x_2]^\Boolean \leftarrow \RandomBooleanShare(P_1, P_2)$
+%%%%
+%%%%
+\STATE $[x_3]^\Boolean \leftarrow \RandomBooleanShare(P_2, P_3)$
+%%%%
+%%%%
+\STATE for $i = 0$ to $i = p - 1$ (\textcolor{blue}{in parallel}):
+\begin{equation*}
+    \FA([x^{(i)}]^\Boolean, [-x_2^{(i)}]^\Boolean, [-x_3^{(i)}]^\Boolean) \rightarrow ([c^{(i)}]^\Boolean, [s^{(i)}]^\Boolean)
+\end{equation*} 
+where $c^{(i)}, s^{(i)}$ denote the $i$th bit of the bitstrings $c$ and $s$.
+\medskip
+%%%%
+%%%%
+\STATE $\PPA(2[c]^\Boolean, [s]^\Boolean) \rightarrow [x_1]^\Boolean$ 
+%%%%
+%%%%
+\STATE $\OpentoPone([x_1]^\Boolean)$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Boolean to Yao}
+\begin{algorithm}[H]
+\floatname{algorithm}{B2Y}
+\renewcommand{\thealgorithm}{}
+\caption{$[x]^\Boolean \rightarrow [x]^\Yao$}
+\label{protocol1}
+The input of this protocol is a boolean shared bit $x$. The protocol converts it to a Yao sharing of $x \in \Z_2$. This protocol makes use of the functionalities $\ShareYao$ and $\GC$.
+\smallskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+\STATE Each share-holder holding the input $x_i$ for $i \in [1, 3]$ generates the Yao sharing $[x_i]^\Yao$ of $x_i$ using $\ShareYao$ as follows:
+\begin{equation*}
+    \ShareYao(x_i) \rightarrow [x_i]^\Yao
+\end{equation*}
+%%%%
+%%%%
+\STATE Each share-holder computes the Yao sharing $[x]^\Yao$ of $x$ using the functionality $\GC$ as follows:
+\begin{equation*}
+    \GC(f([x_1]^\Yao, [x_2]^\Yao, [x_3]^\Yao)) \rightarrow [x]^\Yao
+\end{equation*}
+where $f([x_1]^\Yao, [x_2]^\Yao, [x_3]^\Yao) = [x_1]^\Yao \oplus [x_2]^\Yao \oplus [x_3]^\Yao$
+%%%%
+%%%%
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Yao to Arithmetic}
+\begin{algorithm}[H]
+\floatname{algorithm}{Y2A}
+\renewcommand{\thealgorithm}{}
+\caption{$[x]^\Yao \rightarrow [x]^\Arithmetic$}
+\label{protocol1}
+The input of this protocol is a Yao shared value $x \in \Z_{2^p}$. The protocol converts it to an arithmetic sharing of $x$. This protocol makes use of the functionalities $\ShareYao$, $\GC$ and $\Reconstruct$.
+\smallskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+\STATE $P_1$ and $P_2$ jointly sample $x_2 \leftarrow \Z_{2^p}$. Followed by generating the Yao sharing $[x_2]^\Yao$ of $x_2$ using the functionality $\ShareYao$ as follows:
+\begin{equation*}
+    \ShareYao(x_2) \rightarrow [x_2]^\Yao
+\end{equation*}
+%%%%
+%%%%
+\STATE $P_2$ and $P_3$ jointly sample $x_3 \leftarrow \Z_{2^p}$. Followed by generating the Yao sharing $[x_3]^\Yao$ of $x_3$ using the functionality $\ShareYao$ as follows:
+\begin{equation*}
+    \ShareYao(x_3) \rightarrow [x_3]^\Yao
+\end{equation*}
+%%%%
+%%%%
+\STATE Each share-holder computes the Yao sharing $[x_1]^\Yao$ of $x_1$ using the functionality $\GC$ as follows:
+\begin{equation*}
+    \GC(f([x]^\Yao, [x_2]^\Yao, [x_3]^\Yao)) \rightarrow [x_1]^\Yao
+\end{equation*}
+where $f([x]^\Yao, [x_2]^\Yao, [x_3]^\Yao) = [x]^\Yao - [x_2]^\Yao - [x_3]^\Yao$
+%%%%
+%%%%
+\STATE $[x_1]^\Yao$ is revealed to $P_1$ and $P_3$ where each share-holder runs the functionality $\Reconstruct$ as follows:
+\begin{equation*}
+    \Reconstruct([x_1]^\Yao, P_1)
+\end{equation*}
+\begin{equation*}
+    \Reconstruct([x_1]^\Yao, P_3)
+\end{equation*}
+%%%%
+%%%%
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Yao to Boolean}
+\begin{algorithm}[H]
+\floatname{algorithm}{Y2B}
+\renewcommand{\thealgorithm}{}
+\caption{$[x]^\Yao \rightarrow [x]^\Boolean$}
+\label{protocol1}
+The input of this protocol is a Yao sharing of $x \in \Z_2$, where the evaluator ($P_3)$ holds $k_{\sfx}^x$, and the two garblers $(P_1$ and $P_2)$ hold $(k_{\sfx}^0, \Delta)$. The protocol converts it to an $\RSS$ sharing of $x$. This protocol makes use of a commitment scheme $\Comm$.
+\smallskip
+\begin{algorithmic}[1]
+%%%%
+%%%%
+\STATE $P_1$ and $P_2$ sample $k^r_{\sfr} \leftarrow \{0, 1\}^{\kappa}$ and $P_2$ sends $k^0_{\sfr} = k^r_{\sfr} \oplus (r \Delta)$ to $P_3$.
+%%%%
+%%%%
+\STATE $P_i \in \{P_2, P_3\}$ send commitments $C_0^{P_i} = \Comm(k_{\sfy}^{p_{\sfx}})$, $C_1^{P_i} = \Comm(k_{\sfy}^{\bar{p_{\sfx}}})$ to $P_1$, where $k_y^0 = k_{\sfx}^0 \oplus k_{\sfr}^0$. 
+%%%%
+%%%%
+\STATE $P_1$ verifies if $C_0^{P_2} = C_0^{P_3}$, $C_1^{P_2} = C_1^{P_3}$, and the commitment $C_{p_{\sfx} \oplus x \oplus r}$ decommits to $k_{\sfy}^{x \oplus r}$. $P_1$ sends $k_{\sfy}^{x \oplus r} = k_{\sfx}^x \oplus k_{\sfr}^r$ to $P_3$.
+%%%%
+%%%%
+\STATE $P_3$ verifies that $k_{\sfy}^{x \oplus r} \in \{k_{\sfy}^0, k_{\sfy}^1\}$.
+%%%%
+%%%%
+\STATE $P_1, P_2$ and $P_3$ output $(x \oplus p_{\sfx} \oplus r, r), (r, p_{\sfx})$ and $(x \oplus p_{\sfx} \oplus r, p_{\sfx})$, respectively.
+
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% See whichever can be processed.
+
+% \begin{enumerate}
+%     \item Arithmetic to EC
+%     \item Yao to EC
+%     \item B to EC     
+% \end{enumerate}
+

@@ -1,0 +1,37 @@
+\section{Correlated Randomness}
+
+Our protocols need to both generate random representations of 0 (under an additive sharing)
+and generate RSS shares of unbiased random bits.
+The first is used in the AND protocol,
+while the second is used to allow the ABB to implement algorithms which use randomness.
+We generate both of these without any interaction between the parties, 
+except for a one-time initial setup.
+This initial setup generates correlated keys for each party for a pseudorandom function, which are then used to locally generate the correlated randomness values.
+
+\begin{protocol}[\Setup]
+	{\bf Auxiliary input:} Each party holds a security parameter $\kappa$ and a description of a pseudorandom function $F: \{0, 1\}^\kappa \times \{0, 1\}^\kappa \rightarrow \{0, 1\}$.
+	\begin{enumerate}
+		\item Each $P_i$ chooses a random $k_i \in \{0, 1\}^\kappa$.
+		\item Each $P_i$ sends $k_i$ to $P_{i + 1}$.
+		\item Each $P_i$ stores $(k_{i - 1}, k_i)$.
+		\item Each $P_i$ stores a static variable $id$ and assigns $id = 0$.
+	\end{enumerate}
+\end{protocol}
+
+\begin{protocol}[\RandZero]
+	\begin{enumerate}
+		\item Each $P_i$ computes $\alpha_i = F_{k_i}(id) \oplus F_{k_{i - 1}}(id)$.
+		\item Each $P_i$ sets $id = id + 1$ and outputs $\alpha_i$.
+	\end{enumerate}
+\end{protocol}
+
+\begin{protocol}[\RandBit]
+	\begin{enumerate}
+		\item Each $P_i$ computes $(r_{i - 1}, r_i)$ as $(F_{k_{i-1}}(id), F_{k_{i}}(id))$.
+		\item Each $P_i$ defines $t_i = (r_{i - 1} \oplus r_i)$ and $s_i = r_i$.
+		\item Each $P_i$ sets $id = id + 1$ and outputs $(t_i, s_i)$.
+	\end{enumerate}
+\end{protocol}
+
+The static variable $id$, which is maintained locally by each party, is incremented every time correlated randomness is generated.
+It is straightforward to verify that the protocols outlined above correctly produce the desired correlated randomness.

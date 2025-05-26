@@ -1,0 +1,587 @@
+\section{Complex Functionalities}
+
+The ABB functionality presented in Section \ref{sec:abb},
+provides storage of secret variables
+as well as basic operations which can be performed on these operations.
+The system also provides more complex functionalities, which may occur frequently,
+for instance in data-base style applications.
+These functionalities make use of the ABB, but the way they do so can be non-trivial,
+being designed in order to optimize the performance of the secure computation.
+
+\subsection{Subset Count}
+
+The first functionality, given an array of items, counts the number which satisfy
+a particular comparison condition.
+
+\begin{functionality}[SubsetCount$(R, {[\vec{X}]^B}, {[x_{cmp}]^B})$]
+	$R \in \{<, \leq, =, \geq, >\}$ is some comparison relation.
+	Given $n$ items, $[\vec{X}] = [X_1], \ldots, [X_n]$, calculate the number of items
+	for which $R(X_i, x_{cmp})$ holds.
+	Store the result in the ABB and return a reference to it.
+\end{functionality}
+
+\begin{protocol}[SubsetCount$(R, {[\vec{X}]^B}, {[x_{cmp}]^B})$]
+	Predicate$([x]^B) =$ Compare$(R, [x]^B,[x_{cmp}]^{B})$\\
+	$[\vec{B}]^{B} = $Map$($Predicate, $[\vec{X}]^B)$\\
+	$[\vec{B}]^{A} = $Map$($B2A, $[\vec{B}]^{B})$\\
+	$[cnt]^{A} = $Reduce$(+, [\vec{B}]^{A})$\\
+	return $[cnt]$
+\end{protocol}
+
+
+\subsection{Subset Sum}
+
+Given an array of ABB-stored key value pairs, 
+computes the sum of all values whose keys satisfy a given condition:
+
+\begin{functionality}[SubsetSum$(R, {[\vec{X}]^B}, {[\vec{Y}]}^A, {[x_{cmp}]^B})$]
+	$R \in \{<, \leq, =, \geq, >\}$ is some comparison relation.\\
+	Assumes that the length of $\vec{X}$ and $\vec{Y}$ are both equal to $n$.
+	Compute $\sum Y_i$ for which Compare$(R, X_i, x_{cmp})$ holds.
+	Store the result in the ABB and return a reference to it.
+\end{functionality}
+
+\begin{protocol}[SubsetSum$(R, {[\vec{X}]^B}, {[\vec{Y}]^A}, {[x_{cmp}]^B})$]
+	Predicate$([x]^B) = $ Compare$(R, [x]^B, [x_{cmp}]^B)$\\
+	$[\vec{B}]^{B} = $Map$($Predicate, $[\vec{X}]^B)$\\
+	$[\vec{S}]^{A} = $Map$($IfThenElse, $[\vec{B}]^B, [\vec{Y}]^A, [0]^A)$\\
+	$[sum] = $Reduce$(+, [\vec{S}]^A)$\\
+	return $[sum]$
+\end{protocol}
+
+
+\subsection{Fixed Point Division}
+
+We first present a simple protocol for division over the integers.
+Given two ABB-stored integers, $[x]$ and $[y]$, compute $[\lfloor x/y \rfloor]$.
+
+\begin{functionality}[Divide$({[x]^B}, {[y]^B})$]
+	Let $z$ be the largest integer such that $z \cdot y \leq x$. 
+	Store $z$ in the ABB and return a reference to it.
+\end{functionality}
+
+We present the implementation of this functionality below in the 
+$\mathcal{F}_{ABB}$-hybrid model. 
+When $z$ is an $l$-bit integer, $z_i$ represents the $i^{th}$ lowest-order bit.
+That is $z_0$ is the lowest-order bit and $z_{l-1}$ is the highest-order bit.
+Note that the multiplication by powers of 2 should be performed by bit-shifts
+to maintain the Boolean representation.
+Furthermore, the comparison between $[x]^B$ and $[y]^B \cdot 2^i$ is
+between a $l$-bit integer and an, at most, $2l-1$ bit integer. 
+
+\begin{protocol}[Divide$({[x]^B}, {[y]^B})$]
+	Let $l$ be the number of bits which are used to represent integers.\\	
+	for $i = l-1, \ldots, 0$:\\
+	\indent	$[w]^B = [x]^B \geq (2^i \cdot [y]^B)$:\\
+	\indent	$[z_i]^B = \IfThen{[w]^B}{[1]^B}{[0]^B}$\\
+	\indent	$[x]^B = \IfThen{[w]^B}{[x]^B - (2^i \cdot [y]^B)}{[x]^B}$\\
+	return $[z]$
+\end{protocol}
+
+If we instead wish for a fixed-point result, 
+we can instead specify the number of fractional binary digits required, $d$.
+Note that this assumes that the numerator is of size at most $l - d$ bits,
+otherwise some higher-order bits are lost by the bit-shift operation.
+The function returns the significand of the result; the exponent is $-d$. 
+
+\begin{functionality}[FixedPointDivide$({[x]^B}, {[y]^B}, d)$]
+	Let $z$ be the largest integer such that $y \cdot z \leq x \cdot 2^d$.
+	Store $z$ in the ABB and return a reference to it.
+\end{functionality}
+
+\begin{protocol}[FixedPointDivide$({[x]^B}, {[y]^B}, d)$]
+	$[x]^B = [x]^B \cdot 2^d$\\
+	$[r] = $Divide$([x]^B, [y]^B)$\\
+	return $[r]$
+\end{protocol}
+
+\subsection{Shuffle}
+
+Given an array of items, permute them according to a random permutation
+unknown to all parties.
+
+\begin{functionality}[Shuffle$({[\vec{X}]^B})$]
+	Let $n$ be the length of $\vec{X}$.
+	Pick a random permutation $\pi: \{1, \dots, n\} \rightarrow \{1, \ldots, n \}$.
+	Set $Y_i = X_{\pi(i)}$ for $i = 1, \ldots, n$.
+	Store $\vec{Y}$ in the ABB and return a reference to it.
+\end{functionality}
+
+We here present a protocol that is designed explicitly for the 3-party honest-majority
+setting. Let the parties be $P_0$, $P_1$ and $P_2$.
+The protocol is \emph{asymmetric}. 
+That is different parties do different things at different times.
+As such, the protocol cannot be expressed using only the ABB model introduced
+in Section \ref{sec:abb}.
+In particular, this protocol occasionally secret-shared data between 2 parties.
+This can be expressed using the following 2-party ABB functionality.
+
+\begin{functionality}[$\mathcal{F}_{ABB2}$ 2-Party Arithmetic Black Box]
+	\textbf{Init}($P_i$, $P_j$): \\
+		\indent Initialize the 2-Party Arithmetic Black Box with parties $P_i$
+		and $P_j$ where $i \neq j$.\\
+
+	\noindent \textbf{ReshareFromABB3}($[x]$): \\
+		\indent Given variable $x$ stored in the ABB, store $x$ in the 2-party ABB.
+		Assign a new label which is known to $P_i$ and $P_j$ but not the
+		third party.\\
+
+%	\textbf{Add}($[x]$, $[y]$):\\
+%		Given two variables $x$ and $y$ stored in the 2-party ABB
+%		(where the labels $x$ and $y$ are known to $P_i$ and $P_j$
+%		but need not be known to the third party)
+%		store $x + y$ is the 2-party ABB and return a label to it
+%		to $P_i$ and $P_j$ (but not the third party).\\
+
+	\noindent \textbf{ReshareToABB3}($[x]$):\\
+		\indent $x$ is a variable stored in the 2-party ABB
+		(where identifier $x$ is known to $P_i$ and $P_j$, 
+		but need not be known to the the third party).
+		If the adversary has corrupted $P_i$ or $P_j$,
+		the adversary selects some error term $\delta$
+		store $x + \delta$ in the (3-party) ABB
+		and return a identifier to it to all parties.
+		If the adversary has not corrupted $P_i$ or $P_j$,
+		store $x$ in the (3-party) ABB and return an indentifier to it
+		to all parties.
+\end{functionality}
+
+To allow for easy reading, we overload the $[\cdot]$-notation to indicate
+that a variable is stored in the 2-party ABB.
+To avoid confusion between variables stored in the standard 3-party ABB 
+and those stored in 2-party ABB,
+if any section of code is executed in the $\mathcal{F}_{ABB2}$,
+we use a separate block of code which is labelled 
+``$\mathcal{F}_{ABB2}$ block with $P_i, P_j$'' where $P_i$ and $P_j$ 
+are the two parties involved.
+Every operation inside this block occurs in the $\mathcal{F}_{ABB2}$ model.
+Furthermore, the third party $P_k$, is not involved in any step
+of this block, except in calls to ReshareFromABB3 and ReshareToABB3.
+Any variables that are indicated with the $[\cdot]$ notation within
+this block are held in the 2-party ABB of these two parties
+(except inputs to InputFromABB and outputs from OutputToABB).
+Any variables in this block that do not have the $[\cdot]$ notation
+are \emph{not} public, but rather known to $P_i$ and $P_j$, but not $P_k$.
+Furthermore, any identifiers or functions during this computation
+are not public, but known to $P_i$ and $P_j$ but not $P_k$.
+
+This functionality can simply be implemented using additive secret sharing.
+The protocol below presents a formal implementation of $\mathcal{F}_{ABB2}$
+in the $\mathcal{F}_{ABB}$ model.
+
+\begin{protocol}[$\Pi_{ABB2}$ 2-Party Arithmetic Black Box]
+	\textbf{Init}($P_i$, $P_j$):\\
+		\indent	No action needed. \\
+
+	\noindent \textbf{ReshareFromABB3}($[x]^B$): \\
+		\indent	Let $l$ be the bit-length of $x$.\\
+		\indent Let $[x_i] = \mathcal{F}_{ABB}.Random(l)$\\
+		\indent Set $[x_j] = [x] \oplus [x_i]$\\
+		\indent $x_i = \mathcal{F}_{ABB}.\OutputSingle{[x_i]}{P_i}$\\
+		\indent $x_j = \mathcal{F}_{ABB}.\OutputSingle{[x_j]}{P_j}$\\
+		\indent $x_i$ and $x_j$ are $P_i$ and $P_j$'s shares of $x$ respectively.\\
+		
+	\noindent \textbf{ReshareToABB3}($[x]$): \\
+		\indent Let $x_i$ be $P_i$'s share and $x_j$ be $P_j$'s share of $[x]$.\\
+		\indent $[res_i] = \mathcal{F}_{ABB}.\Input{x_i}{P_i}$\\
+		\indent $[res_j] = \mathcal{F}_{ABB}.\Input{x_j}{P_j}$\\
+		\indent $[res] = [res_i] \oplus [res_j]$\\
+		\indent Return $[res]$\\
+\end{protocol}
+
+\subsubsection{Intuition}
+
+The protocol is based on the following semi-honest honest-majority shuffle protocol of 
+\cite{EPRINT:LauWilZha11}.
+Since there are 3 parties, and at most 1 corruption, it is safe to reshare
+the data between only two of these parties using an additive sharing.
+The first step is to secret-share the data, $X$, between $P_0$ and $P_1$.
+$P_0$ and $P_1$ can then locally pick a permutation
+(e.g. chosen at random by $P_0$ and sent to $P_1$ as an array)
+and this permuation can remain unknown to $P_2$.
+$P_0$ and $P_1$ can then locally permute their shares of $X$ according to 
+this permutation, and will obtain shares of the permuted array.
+$P_0$ and $P_1$ can then reshare this data back to a 3-party RSS sharing.
+The data has now been permuted; $P_0$ and $P_1$ know which permutation
+was used to permute the data but $P_2$ does not.
+
+The process is repeated with $P_1$ and $P_2$ as the permutation-performing parties,
+taking as input the data which has already been permuted by $P_0$ and $P_1$.
+It is then repeated again with $P_2$ and $P_0$ as the permutation-performing parties.
+The result is an array holding the data after 3 sequential permutations.
+Each party was not involved in one of the permutations, and therefore no party
+is aware of the full permutation.
+
+If the adversary is malicious, the protocol above breaks down in the following way.
+Each party is able to introduce additive error to the inputs, or outputs, of any shuffle
+in which they participated.
+To protect against malicious adversaries, we add ``Message Authentication Codes'' (MACs).%
+\footnote{
+	In the general cryptographic definition, a MAC should guarantee that an 
+	adversary is unable to forge new MACs when they have been provided the MACs
+	of chosen messages.
+	However, in our case, it suffices to use what is technically 
+	an Algebraic Manipulation Detection (AMD) code;
+	that is a function that detects if the adversary introduces additive errors to the
+	input and the tag, where the adversary cannot see the MACs.
+	Nevertheless, we still call it a MAC, since this usage is common in the MPC 
+	literature (e.g. SPDZ \cite{C:DPSZ12}).
+}
+We add MACs to each item before it is shuffled.
+We then shuffle the MACs with the items, according to the same shuffle.
+We then check the MACs after each shuffle. 
+This ensures that if an adversary introduces an error into any input
+and/or MAC, this is caught (except with negligible probability)
+and the protocol aborts.
+
+\subsubsection{ShuffleWithError Protocol}
+
+The core step is a protocol which allows two parties to shuffle 
+an array of items.
+However, if either of these parties is corrupt, the corrupt party
+is able to introduce an additive error into the result.
+
+\begin{protocol}[2PartyShuffleWithError$({P_i, P_j, [\vec{Z}]^B})$]
+	\begin{protocol}[$\mathcal{F}_{ABB2}$ block with $P_i$, $P_j$]
+		$[\vec{Zij}]^B = $ReshareFromABB3$([\vec{Z}]^B)$\\
+		$P_i$ selects a random permutation on $\{1, n\}$, $\vec{Perm}$.
+		It is represented as an array. $P_i$ sends it to $P_j$.\\
+		\noindent // Permute $Z$ according to $Perm$.\\
+		$AccessZij(a) = [\vec{Zij_a}]^B$\\
+		$[\vec{ZijPerm}]^B = $Map$(AccessZij, Perm)$\\
+		$[\vec{ZPerm}]^B = $ReshareToABB3($[\vec{ZijPerm}]^B$)
+	\end{protocol}
+	return $[ZPerm]^B$ \\
+\end{protocol}
+
+\subsubsection{Formal Protocol Description}
+The protocol is presented below. 
+We use the ``function'' keyword to indicate the declaration of a 
+multi-line function.
+
+\begin{protocol}[Shuffle$({[\vec{X}]^B})$]
+	$[\alpha]^{B} = $Random$(\sigma)$\\
+	CreateMac($[x]^B) = \MultWithError{[x]^B}{[\alpha]^B}$\\
+	\noindent $[\vec{Mac}]^{B} = $Map$($CreateMac, $[\Vec{X}]^B)$\\
+	$[\vec{Z}]^{B} = $Map$($Concatenate, $[\vec{X}]^B$, $[\vec{Mac}]^B$)\\
+
+	\noindent function VerifyMacArray$([\vec{Y}]^B, [vec{M}]^B$)\{ \\
+		\indent CheckMac$([y]^B, [m]^B) = \MultWithError{[y]^B}{[\alpha]^B} - [m]^B$\\
+		\indent NotEqualZero(v) = $(v \neq 0)$\\
+		\indent $[\vec{Error}]^B = $Map$($CheckMac, $[\vec{Y}]^B, [\vec{M}]^B)$\\
+		\indent $\vec{Error} = $Map$($Open, $[\vec{Error}]^B$)\\
+		\indent $\vec{Bad} = $Map$($NotEqualZero$, \vec{Error})$\\
+		\indent $isBad = $Reduce$(OR, \vec{Bad})$\\
+		\indent if $isBad$ \textbf{abort}\\
+	\}\\	
+
+	\noindent $[\vec{ZA}] = $2PartyShuffleWithError$(P_0, P_1, [\vec{Z}]^B)$\\
+	$[\vec{XA}]^B = $Map$($BitSlice, $[\vec{ZA}]^B$, 1, $l$)\\
+	$[\vec{MacA}]^B = $Map$($BitSlice, $[\vec{ZA}]^B$, $l+1$, $l + \sigma$)\\	
+	VerifyMacArray($[\vec{XA}]^B, [\vec{MacA}]^B$)\\
+
+	\noindent $[\vec{ZB}] = $2PartyShuffleWithError$(P_1, P_2, [\vec{ZA}]^B)$\\
+	$[\vec{XB}]^B = $Map$($BitSlice, $[\vec{ZB}]^B$, 1, $l$)\\
+	$[\vec{MacB}]^B = $Map$($BitSlice, $[\vec{ZB}]^B$, $l+1$, $l + \sigma$)\\	
+	VerifyMacArray($[\vec{XB}]^B, [\vec{MacB}]^B$)\\
+
+	\noindent $[\vec{ZC}] = $2PartyShuffleWithError$(P_2, P_0, [\vec{ZB}]^B)$\\
+	$[\vec{XC}]^B = $Map$($BitSlice, $[\vec{ZC}]^B$, 1, $l$)\\
+	$[\vec{MacC}]^B = $Map$($BitSlice, $[\vec{ZC}]^B$, $l+1$, $l + \sigma$)\\
+	VerifyMacArray($[\vec{XC}]^B, [\vec{MacC}]^B$)\\
+
+	\noindent return $[\vec{XC}]^B$
+\end{protocol}
+
+
+\subsection{Sort}
+
+Another generically useful protocol is that of sorting. 
+It is expressed by the following functionality:
+
+\begin{functionality}[StableSort$(ord, {[\vec{key}]^B}, {[\vec{data}]^B})$]
+	$[\vec{key}]^B$ and $[\vec{data}]^B$ are arrays,
+	with the same length $n$.
+	Given an ordering $ord \in \{asc, desc\}$
+	sort the $(key_i, data_i)$ tuples in ascending or descending order 
+	according to key.
+	The sort is stable, that is output data items with the same key
+	occur in the same order as in the input.
+	Store the result in the ABB and return a reference to it.
+\end{functionality}
+
+The core idea is that if we first shuffle the inputs,
+we can use a non-oblivious sort, in which the data access pattern 
+depends on the items. 
+The shuffle ensures that the data access pattern during the shuffle 
+is the same of a random input, and therefore leaks no information
+about the items or their relative ordering.
+If there are duplicate items this creates a problem,
+as any inequality comparison will always produce the same output when 
+comparing these regardless of their order, 
+that is such an output is not re-randomized by the shuffle.
+To protect against this, we append the original index to each item before
+the sort, which breaks ties in the case of identical items.
+As a result, the sort is also stable.
+This index is then removed prior to outputting the result.
+
+In order to achieve low round complexity, we use quicksort.
+This means that the cost of the protocol is variable:
+in expectation it requires $\Theta(n \log(n))$ comparisons,
+but in the worst case (depending on the randomness of the shuffle)
+it can require $\Theta(n^2)$ comparisons.
+
+\begin{protocol}[StableSort$(ord, {[\vec{key}]^B}, {[\vec{data}]^B})$]
+	Let $n$ be the number of items in $key$, and $l$ their bit-length.\\
+	Let $t$ be the bit-length of items in $[\vec{data}]$.
+	for i in range(n): \\
+		if ($ord$ == asc): $Ind_i = i$ \\
+		else $Ind_i = n+1-i$ \\
+	$[\vec{UniqueKeys}]^B = $Map$($Concatenate, $[\vec{key}], \vec{Ind})$ \\
+	$[\vec{Combined}]^B = $Map$($Concatenate, $[\vec{UniqueKeys}]$, $[\vec{data}]$) \\
+	$[\vec{Permuted}] = Shuffle([\vec{Combined}])$ \\
+	$[\vec{Sorted}] = $Quicksort$(ord, [\vec{Permuted}])$ \\
+	$[\vec{SortedKeys}] = $Map$($Slice, $[\vec{Sorted}]$, 1, $l$) \\
+	$[\vec{SortedData}] = $Map$($Slice, $[\vec{Sorted}]$, $l+\log(n)+1$, $l+\log(n)+t$) \\
+	return $[\vec{SortedKeys}], [\vec{SortedData}]$ \\
+\end{protocol}
+
+\begin{protocol}[QuickSort$(ord, {[\vec{W}]})$]
+	$n = len([\vec{W}])$ \\
+	if $n \leq 1$: \\
+	\indent return $[\vec{W}]$ \\
+	$[pivot] = [\vec{W_1}]$ \\
+	if $ord == asc$: $rel = \geq$ \\
+	else: $rel = \leq$ \\
+	$[\vec{Comp}] = $Map$($Compare$,rel, [pivot], [\vec{W}_{2, \ldots, n}])$ \\
+	$\vec{Comp} = $Map$($OutputToAll$, [\vec{Comp}])$ \\
+	Initialize $[\vec{A}]$ and $[\vec{B}]$ to empty arrays \\
+	for $i = 1, \ldots, n-1$: \\
+	\indent if $Comp_i$: \\
+	\indent \indent Append $[\vec{W}_{i+1}]$ to $[\vec{A}]$ \\
+	\indent else: \\
+	\indent \indent Append $[\vec{W}_{i+1}]$ to $[\vec{B}]$ \\
+	$[\vec{ASorted}] = $QuickSort$(ord, [\vec{A}])$ \\
+	$[\vec{BSorted}] = $QuickSort$(ord, [\vec{B}])$ \\
+	$[\vec{Sorted}_{1, \ldots, len(ASorted)}] = [\vec{A}]$ \\
+	$[\vec{Sorted}_{len(ASorted) + 1}] = [pivot]$ \\
+	$[\vec{Sorted}_{len(ASorted) + 2, \ldots, n)}] = [\vec{B}]$ \\
+	return $[\vec{Sorted}]$ \\
+\end{protocol}
+
+
+\subsection{Most Common Item}
+
+Given an array of items, find the item which occurs the most frequently.
+
+\begin{functionality}[MostCommonItem$({[\vec{X}]^B})$]
+	Find the value $x \in \vec{X}$ for which the most values in $\vec{X}$
+	are equal to $x$.
+	If there are multiple such items, choose one of them arbitrarily.
+	Store the result in the ABB and return a reference to it.
+\end{functionality}
+
+This protocol is inspired by the Vogue protocol (Jangir et al, 2024)
+for secure computation of heavy-hitters. 
+It depends on a protocol for secure sort.
+
+\begin{protocol}[MostCommonItem$({[\vec{X}]^B})$]
+	$[\vec{Sorted}] = $Sort$([\vec{X}])$ \\
+	$[IsFirst_1] = [1]$ \\
+	$[IsFirst_{2, \ldots, n}] = $Map$($Compare, $\neq$, $[\vec{Sorted}_{2, \ldots, n}]$, 
+		$[\vec{Sorted}_{1, \ldots, n-1}]$) \\
+	for i in range(n), $Ind_i = i$\\
+	$[\vec{Data}] = $Map$($Concatenate, $\vec{Ind}$, $[\vec{X}]$) \\
+	$[\vec{IsFirstOrdered}], [\vec{DataOrdered}]$ = 
+		StableSort$(desc, [\vec{IsFirst}], [\vec{Data}])$ \\
+	$[\vec{OrigInd}] = $Map$($Slice, $[\vec{DataOrdered}], 1, \log(n)$) \\
+	$[\vec{OrderedItems}] = $Map$($Slice, $[\vec{DataOrdered}], \log(n)+1, \log(n) + l)$ \\
+	function CalculateCount($[IsAFirst], [OrigI], [NextIsAFirst], [NextOrigI]$) \{ \\
+		\indent $[IsTheFinalFirst] = [IsAFirst] AND (NOT [NextIsAFirst])$ \\
+		\indent $[ItemLoc]^A = B2A([OrigI]^B)$ \\
+		\indent $[NextLoc]^A = B2A([NextOrigI]^B)$ \\
+		\indent $[Diff]^A = [NextLoc]^A - [ItemLoc]^A$ \\
+		\indent $[Count]^A = \IfThen{[IsTheFinalFirst]}{n - [ItemLoc]^A + 1}{[Diff]^A}$\\
+		\indent $[Count]^A = \IfThen{[IsAFirst]}{[Count]^A}{[0]^A}$\\
+		\indent $[Count]^B = A2B([Count]^A) $\\
+		\indent return $[Count]^B$ \\
+	\} \\
+
+	\noindent $[Counts] = $Map$($CalculateCount, $[\vec{IsFirstOrdered}_{1, \ldots, n-1}], \\		\indent	[\vec{OrigInd}_{1, \ldots, n-1}], 
+		 	[\vec{IsFirstOrdered}_{2, \ldots, n}],
+			[\vec{OrigInd}_{2, \ldots, n}])$ \\
+	$[Counts_n] = [\vec{IsFirstOrdered}_n]$ \\
+	$[\vec{Counts}], [\vec{RankedItems}] = $StableSort$(desc, [Counts], [OrderedItems])$ \\
+	$[MostCommonItem] = [\vec{RankedItems}_1]$ \\
+	return $[MostCommonItem]$ \\
+\end{protocol}
+
+
+\subsection{Split And Pad}
+
+Typically, decrypted data will be represented using a text format,
+such as JSON or XML.
+These formats are structured, and we can assume that the field names are 
+pre-determined.
+Nevertheless, this representation is not easy for a secure computation 
+to work with directly.
+The main challenge is that the location of relevant fields is variable,
+dependent on fields values. 
+Consider the following simple JSON string:\\
+\texttt{[\{"name":"Alice", "age":21\}, \{"name":"Bob", "age":23\}]}\\
+In this case, the position in the string at which the field for Alice's age 
+is located (in this case the $24^{th}$ character) 
+depends on the length of the name ``Alice''. 
+Likewise, the position in the string at which the entry for ``Bob'' begins
+depends both on the length of Alice's name, and the order of magnitude
+of Alice's age.
+Therefore, revealing the locations at which field values are located
+would leak information about the field names themselves.
+
+We would prefer to have data in an array, in which each field is padded to 
+a maximum length. For instance:
+
+\begin{tabular}{|l|l|}
+	\hline
+	Name			&  Age	 \\ \hline
+	\texttt{Alice---}	&  \texttt{21-}  \\ \hline
+	\texttt{Bob-----}	&  \texttt{23-}	 \\ \hline
+\end{tabular}
+
+The main task needed to achieve this can be expressed by a 
+functionality we refer to as SplitAndPad.
+This takes a secret-shared string that is delimited by a certain character 
+(e.g. ``\{'' or ``,'') and splits the string into an array of secret-shared segments,
+divided by the delimiter, each padded to a certain length.
+For instance this could be used in the above JSON string to split separate
+records (using delimiter ``\{''),
+to separate fields within a record (using delimiter ``,'') 
+or to separate field names from values (using delimiter ``:'').
+The protocol should take as input the maximum length of each delimiter-divided
+segment, and should reveal nothing except the number of delimiters/segments.
+
+Surprisingly, our solution has a number of rounds
+which does not depend on the number of segments.
+We do this by making heavy use of conversions from Boolean to arithmetic
+share representations, local computation of cumulative sums 
+and constant-round secure shuffles.
+First, we obtain a mapping from $i$ to the index of the $i^{th}$ delimiter.
+This is achieved by evaluating the equality circuit to check whether
+an item is a delimiter, converting this secret-shared Boolean value to an
+arithmetic representation and then computing the cumulative sum,
+which gives for each delimiter the number of delimiters which have occurred up to
+that point. 
+Second, using this and cumulative sum techniques,
+we obtain for each non-delimiter character secret-shared values $i$ and $j$ such that
+the previous delimiter was the $i^{th}$ delimiter and occurred $j$ locations prior.
+This means that the given non-delimiter character should occur in 
+the $i^{th}$ segment, at position $j$ in that segment.
+Third, we create whitespace padding characters.
+We calculate the (secret-shared) length of each unpadded segment 
+from the difference of the indexes of adjacent delimiters, 
+which in turn allows us to calculate the amount of padding we need.
+Each needed padding character can then be assigned a segment and a location
+within that segment.
+Finally, we shuffle all non-delimiter characters and needed padding characters,
+reveal the segment and position to which each belongs (while keeping the character
+itself secret-shared) and relocate each secret-shared character accordingly.
+
+
+\begin{protocol}[SplitAndPad$({\bvec{S}}, delimChar, paddingChar, maxLength)$]
+	$n = length(\bvec{S})$ \\
+	for $i = 1, \ldots, n$: \\
+	\indent $\avec{ind_i} = [i]$ \\
+	$isDelim([x]^B) = Compare(=, [x]^B , [delimChar]^B)$ \\
+	$\bvec{delims} = Map(isDelim, \bvec{S})$ \\
+	$\avec{delims} = Map(IfThenElse, \bvec{delims}, [1]^A, [0]^A)$\\
+	for $i = 1, \ldots, n$: \\
+	\indent $\avec{rowID_i} = \sum_{j=1}^i \avec{delims_j})$ \\
+
+	The permutation is stored by each pair of parties storing a permutation.
+	It is therefore not an Arithmetic, Boolean or Yao sharing.\\
+	$[\vec{perm1}] = PickPermutation(n)$ \\
+	$\avec{indShuffled} = Shuffle([\vec{perm1}], \avec{ind})$ \\
+	$\bvec{delimsShuffled} = Shuffle([\vec{perm1}], \bvec{delims})$ \\
+	$\avec{rowIDShuffled} = Shuffle([\vec{perm1}], \avec{rowID})$ \\
+	$\vec{delimsShuffled} = Map(Open, \bvec{delimsShuffled})$ \\
+	$nDelims = \sum_{i=1}^b delimsShuffled_i$ \\
+	for $i = 1, \ldots, n$: \\
+	\indent	if $\vec{delimsShuffled}_i$: \\
+	\indent \indent $j = Open(\avec{rowIdShuffled_i})$ \\
+	\indent \indent $\avec{delimInds_j} = \avec{indShuffled_i}$ \\
+	$\avec{delimRowLength_1} = \avec{delimInds_1} + 1 $\\
+	for $j = 2, \ldots, nDelims$: \\
+	\indent $\avec{delimRowLength_j} = \avec{delimInds_j} - 
+		\avec{delimInds_{j-1}}$ \\
+	$delimCnt= 1$ \\
+	for $i = 1, \ldots, n$: \\
+	\indent if $\vec{delimsShuffled}_i$: \\
+	\indent \indent $j = \vec{rowIdShuffled}_i$ \\
+	\indent \indent $\avec{rowLengthShuffled_i} = \avec{delimRowLength_j}$ \\
+	\indent else: \\
+	\indent \indent $\avec{rowLengthShuffled_i} = [0]^A $\\
+
+	\noindent
+	$\avec{rowLength} = Unshuffle([\vec{perm1}], \avec{rowLengthShuffled})$ \\
+	for $i = 1 \ldots n:$\\
+	\indent $\avec{indexWithinRow_i} = \avec{ind_i} - \sum_{j=1}^i \avec{rowLength_j}$\\
+	\indent $\avec{targetLoc_i} = \avec{rowID_i} \cdot MaxLength +\avec{indexWithinRow_i}$\\
+	
+	\noindent
+	$\avec{targetLocShuffled} = Shuffle([\vec{perm1}], \avec{targetLoc})$ \\
+	$\bvec{SShuffled} = Shuffle([\vec{perm1}], \bvec{S})$ \\
+
+	\noindent
+	$\bvec{finalChars} = []^B$\\
+	$\bvec{finalTargets} = []^A$ \\
+	for $i = 1, \ldots, n$: \\
+	\indent if $\vec{delimShuffled_i} \neq 1:$ \\
+	\indent \indent $\bvec{finalChars}.append(\bvec{SShuffled_i}) $\\
+	\indent \indent	$\avec{finalTargets}.append(\avec{targetLocShuffled_i})$ \\
+	
+	\noindent
+	nRows = nDelims + 1 \\
+	for $i = 1, \ldots, nDelims$: \\
+	\indent $[rowLengthWithoutDelim_i] = [delimRowLength_i] -1 $\\
+	$\avec{rowLengthWithoutDelim_{nRows}} = n - \avec{delimInds_{nDelims}} - 1$\\
+	$\bvec{rowLengthWithoutDelim} = Map(A2B, \avec{rowLengthWithoutDelim})$ \\
+
+	\noindent
+	for $i = 1, \ldots, nRows$:\\
+	\indent for $j = 1, \ldots, maxLength$:\\
+	\indent \indent $\bvec{itemRowLength_{i \cdot maxLength + j}} = 
+		\bvec{rowLengthWithoutDelim_i}$ \\
+	\indent \indent $itemCol_{i \cdot maxLength + j} = j$ \\
+	\indent \indent $\bvec{padChars}_{i \cdot maxlength + j} = [paddingChar]^B$ \\
+	\indent \indent $\avec{paddingTarget_{i \cdot maxLength + j}} =[i \cdot maxLength + j]^A$\\
+	$\bvec{paddingNeeded} = Map(Compare(\geq, itemRowLength, itemCol)) $\\
+	
+	\noindent
+	$[\vec{perm2}] = PickPermutation(nRows \cdot maxLength) $\\
+	$\bvec{padCharsShuffled} = Shuffle([\vec{perm2}], \bvec{padChars}) $ \\
+	$\bvec{paddingNeededShuffled} = Shuffle([\vec{perm2}], \bvec{paddingNeeded}) $ \\
+	$\avec{paddingTargetShuffled} = Shuffle([\vec{perm2}], \avec{paddingTarget}) $ \\
+
+	\noindent
+	$\bvec{paddingNeededOpened} = Map(Open, \bvec{paddingNeededShuffled})$ \\
+	for $i = 1, \ldots, maxLength \cdot nRows$: \\
+	\indent if $\vec{paddingNeededOpened_{i}}$: \\
+	\indent \indent $\bvec{finalChars}.append(\bvec{padCharsShuffled_i})$\\
+	\indent \indent $\avec{finalTargets}.append(\avec{paddingTargetShuffled_i})$ \\
+
+	\noindent 
+	$[\vec{perm3}] = PickPermutation(nRows \cdot maxLength) $ \\
+	$\bvec{finalCharsShuffled} = Shuffle([\vec{perm3}], \bvec{finalChars}) $ \\
+	$\avec{finalTargetsShuffled} = Shuffle([\vec{perm3}], \avec{finalTargets}) $ \\
+	$\vec{finalTargetsShuffled} = Map(Open, \avec{finalTargetsShuffled}) $ \\
+
+	\noindent
+	for $i = 1, \ldots, nRows \cdot maxLength $: \\
+	\indent \indent $targ = \vec{finalTargetsShuffled_{i}}$ \\
+	\indent \indent $\bvec{res_{targ}} = \bvec{finalCharsShuffled_{i}}$\\
+
+	\noindent
+	return $\bvec{res}$
+
+\end{protocol}
+	

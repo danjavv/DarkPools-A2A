@@ -1,0 +1,54 @@
+\section{\SLCompute~Overview}
+
+The \SLCompute~platform allows the secure outsourcing of computation to a 
+distributed platform, behaving as a cryptographically secure virtual machine.
+The initial platform is designed for the following security setting:
+\begin{itemize}
+	\item There are 3 compute parties.
+	\item At most one of these parties is corrupted.
+	\item The corrupted party may be \emph{malicious}:
+		it may behave arbitrarily but doing so cannot allow it to learn more
+		information or cause the protocol to produce incorrect outputs.
+	\item The protocol is \emph{secure with abort}: the corrupted party may cause the
+		protocol to stop without completing.
+	\item Aborts are \emph{not identifiable}: it is often not clear which party
+		caused the protocol to abort.
+	\item Aborts are \emph{not fair}: the corrupted party may learn an output and cause
+		an abort before other parties learn the output.
+	\item Communication is \emph{synchronous}: there is a publicly-known upper-bound
+		on message latency. 
+	\item The platform is \emph{computationally secure}:
+		that is there is a negligible probability of incorrect outputs
+		and negligible statistical leakage of additional information,
+		against a computationally bounded adversary.%
+		\footnote{
+			In general, we assume Pseudo-Random Functions.
+			Any further computational assumptions will be stated explicitly.
+		}
+\end{itemize}
+
+Note that the synchrony assumption means that a party that goes offline
+(or has a latency above the publicly-known upper-bound)
+will be treated the same as a malicious party.
+However, since the protocol is secure with abort,
+this is simply a denial of service, which is an expected consequence of an offline party.
+If a party observes incorrect behaviour, there is a unique message $\bot$
+which it can send to other parties, causing them to abort the protocol.
+
+The first instantiation of the platform supports the following functionalities:
+\begin{enumerate}
+	\item Standard basic operations on bits and positive integers.
+	\item Basic analytic queries.
+		It allows sums, counts and averages to be computed
+		over records that satisfy specified equality/inequality-based conditions.
+	\item The establishment a secure (encrypted and authenticated) 
+		connection with an API end-point, including decrypting to secret-shares.
+\end{enumerate}
+
+The \SLCompute~platform can be extended in the future.
+The security setting can be extended, for instance by extending to the 2-party setting
+or by providing identifiable abort.
+The functionality can also be extended, for instance by allowing more sophisticated
+queries or analysis based on machine learning techniques.
+However, this document currently is restricted to providing a specification that
+matches the security setting and functionalities detailed above.

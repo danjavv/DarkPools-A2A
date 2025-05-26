@@ -1,0 +1,46 @@
+\section{Linear Operations}
+
+Linear operations, such as XOR and NOT, are computed locally by each party involved.
+Let $\bit{x}$ represent a sharing of the value $x$, with shares $(t^x_1, s^x_1)$, $(t^x_2, s^x_2)$, $(t^x_3, s^x_3)$ assigned to $P_1, P_2, P_3$, respectively. Similarly, let $\bit{y}$ represent a sharing of the value $y$, with shares $(t^y_1, s^y_1), (t^y_2, s^y_2), (t^y_3, s^y_3)$ for $P_1, P_2, P_3$, respectively.
+
+\subsection{XOR Gates}
+
+To compute $\bit{x \oplus y}$, each $P_i$ locally computes $(t^z_i, s^z_i)$ as follows:
+
+\begin{itemize}
+    \item $t^z_i = t^x_i \oplus t^y_i$
+    \item $s^z_i = s^x_i \oplus s^y_i$
+\end{itemize}
+
+Now, let us see that the result indeed represents a valid Boolean sharing of $x \oplus y$. First, the $s$-values are valid becasue
+\begin{equation}
+    (s^x_1 \oplus s^y_1) \oplus (s^x_2 \oplus s^y_2) \oplus (s^x_3 \oplus s^y_3) = (s^x_1 \oplus s^x_2 \oplus s^x_3) \oplus (s^y_1 \oplus s^y_2 \oplus s^y_3) = x \oplus y
+\end{equation}
+
+Next, for each $i$, we verify that:
+\begin{equation}
+    (t^x_i \oplus t^y_i) = (s^x_{i - 1} \oplus s^x_i) \oplus (s^y_{i - 1} \oplus s^y_i) = (s^x_{i - 1} \oplus s^y_{i - 1}) \oplus (s^x_i \oplus s^y_i)
+\end{equation}
+
+This confirms that the shares $(t^z_1, s^z_1), (t^z_2, s^z_2), (t^z_3, s^z_3)$ correctly represent a Boolean sharing of $x \oplus y$.
+
+\subsection{NOT Gates}
+
+To compute $\bit{\neg x}$, each $P_i$ locally computes $(t^z_i, s^z_i)$ as follows:
+
+\begin{itemize}
+    \item $t^z_i = t^x_i$
+    \item $s^z_i = s^x_i \oplus 1$
+\end{itemize}
+
+Now, let us see that the result indeed represents a valid Boolean sharing of $\neg x$. First, the $s$-values are valid becasue
+\begin{equation}
+    (s^x_1 \oplus 1) \oplus (s^x_2 \oplus 1) \oplus (s^x_3 \oplus 1) = (s^x_1 \oplus s^x_2 \oplus s^x_3) \oplus 1 = x \oplus 1 = \neg x
+\end{equation}
+
+Next, for each $i$, we verify that:
+\begin{equation}
+    t^z_i = (s^x_{i - 1} \oplus s^x_i) = (s^x_{i - 1} \oplus 1) \oplus (s^x_i \oplus 1)
+\end{equation}
+
+This confirms that the shares $(t^z_1, s^z_1), (t^z_2, s^z_2), (t^z_3, s^z_3)$ correctly represent a Boolean sharing of $\neg x$.

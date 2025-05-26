@@ -1,0 +1,29 @@
+\section{Arrays}
+
+It is useful to be able to store arrays in the ABBs as well.
+For any ABB-type, there is an array type which is represented by
+placing an arrow above the variable.
+For example, $\bitvec{X}$ represents an array of secret-shared bits.
+
+Some generic operations are applicable to any type of array.
+The most basic is indexing, which is represented by placing the
+index in a subscript, e.g. $\bitvec{X_i}$ represents the $i^{th}$
+item in array $\bitvec{X}$. 
+Arrays are zero-indexed.
+The function \len~can be applied to any array, returning the length 
+of the array.
+
+\emph{Slice} and \emph{Concatenate} are generic array functions
+which output arrays.
+$\Slice{[\vec{X}]}{s}{e}$, where $0 \leq s \leq e \leq \len([\vec{X}])$,
+returns an array of length $e-s$ containing the $s^{th}$ to $e^{th}$
+items of $[\vec{X}]$ (including the $s^{th}$, excluding the $e^{th}$).
+$\Concat{[\vec{X}]}{[\vec{Y}]}$, 
+where $\vec{X}$ and $\vec{Y}$ are vectors of the same type (but potentially 
+different lengths),
+returns an array of length $\len([\vec{X}]) + \len([\vec{Y}])$,
+which consists of the items of $[\vec{X}]$ followed by the items of $[\vec{Y}]$.
+Both of these protocols are achieved simply by copying and renaming local shares,
+and therefore require no communication between parties.
+In shorthand, $\Slice{[\vec{X}]}{s}{e}$ is represented as $[\vec{X_{s..e}}]$,
+while $\Concat{[\vec{X}]}{[\vec{Y}]}$ is represented as $[\vec{X}] || [\vec{Y}]$.

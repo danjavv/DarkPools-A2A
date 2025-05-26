@@ -1,0 +1,142 @@
+\section{Introduction}
+
+Another data-type which will be useful for the Silent Compute platform
+is that of elements of the Galois Field \GFtwol.
+A core result in finite field theory is that for every 
+$n = p^k$ where $p$ is prime and $k$ is a non-negative integer,
+there is a finite field containing $n$ elements.
+Furthermore, for a given $n$, all such finite fields are isomorphic.
+
+Note that addition and multiplication modulo $2^l$ form a \emph{ring},
+but fail to form a \emph{field} (because many items do not have
+multiplicative inverses).
+Addition and multiplication modulo any prime $p$ \emph{do} form a field.
+However, since this field is of a prime size, it is less interoperable
+with other types, in particular the BoolInt type, which is of size $2^l$ 
+for some $l$.
+Operating over a field of size $2^l$ allows us to apply tools from fields
+to ABB-stored variables that are represented using $l$-bit types.
+While Galois fields in general refer to fields of size $p^k$ for any prime $p$,
+for this document we will use Galois sharing to refer only to sharings
+of variables in \GFtwol.
+
+The meaning of addition and multiplication in \GFtwol~is very different
+from that over $\mathbb{Z}_{2^l}$.
+Elements of \GFtwol~are best thought of as polynomials of degree $l-1$.
+Each coefficent of the polynomial belongs to $\Z_2$. 
+This in particular means that addition of items in \GFtwol~
+behaves identically to bitwise-XOR:
+each coefficient is added independently, with wrap-around modulo 2.
+Multiplication in \GFtwol~corresponds to multiplication of polynomials.
+However, when two polynomials of degree $(l-1)$ are multiplied,
+the result is a polynomial of degree (up to) $2(l-1)$.
+To keep the polynomial of degree at most $l-1$, every time a multiplication occurs, 
+the polynomial is reduced by finding what the remainder of the product polynomial
+is when it is divided by a certain fixed polynomial of degree $l$.
+For any irreducible polynomial (a polynomial which cannot be factored),
+this definition of multiplication satisfies the requirements of a finite field.
+
+In general, there are multiple valid irreducible polynomials which could be chosen.
+While these result in different definitions of multiplication, all of these choices
+are isomorphic (that is there is a one-to-one mapping between elements
+such that multiplication and addition preserve the mapping).
+If the representation of outputs of multiplication is not significant
+(for instance in the outputs of a MAC),
+then it does not matter which irreducible polynomial is used,
+as long as the same polynomial is used for each $l$.
+This specification does not define the irreducible polynomials used,
+but assumes that each party has access to a library to perform 
+local multiplications in \GFtwol~which uses the same irreducible polynomial
+for each $l$ across all parties.
+
+In order to make explicit the distinction between operations in \GFtwol,
+we denote addition in any Galois field \GFtwol~using \Gadd, 
+and denote multiplication using \Gmult.
+Note that addition and multiplication in \GFtwol~are commutative,
+that is $x \Gadd y = y \Gadd x$ and $x \Gmult y = y \Gmult x$.
+
+Note that it is possible for the Galois ABB to hold variables from 
+different field sizes. 
+For instance, given some $l, m > 0$ where $l \neq m$, the Galois ABB may hold
+both variables from $\GFtwol$ and $\GFtwom$.
+However, the Galois ABB requires that for variables to be added or multiplied,
+they should be from the same field sizes.
+A variable implicitly keeps track of the field size which it is from.
+
+The functionality for the Galois ABB is presented explicitly below.
+
+\begin{functionality}[Galois Share ABB]
+	\GalSetup{}: Initialize the ABB
+
+	\GalRand{l}: Generate a random member of $\GFtwol$
+		and store it in the ABB.
+
+	\InputGal{x}: Given a public value in \GFtwol, store it in the ABB.
+		(Shorthand: $\galois{x}$.)
+
+	\InputGalFrom{x}{i}: Given a private value $[x]_i$, held by $P_i$, 
+		where $x \in \GFtwol$, store $x$ in the ABB.
+		Note that $P_i$'s local \emph{identifier} for $[x]_i$ can also
+		be private to $P_i$.
+
+	\OutputGal{\galois{x}}: Given a member of \GFtwol~which is stored in the ABB 
+		under identifier $x$, reveal it to all parties.
+
+	\OutputGalTo{\galois{x}}{i}: Given a member of \GFtwol~which is stored in the ABB
+		under identifier $x$, reveal it to $P_i$.
+
+	\BoolArrToGal{\bitvec{X}}: Given an array of bits $\vec{X}$ stored in the 
+		Boolean Bit ABB, create an element of \GFtwol~in which the
+		coefficients of the polynomials are the bits of $\vec{X}$
+		and store it in the Galois ABB.
+
+	\GalToBoolArr{\galois{x}}: Given an element of \GFtwol, $x$,
+		which is stored in the Galois ABB, 
+		create an array of bits holding the coefficients of the 
+		polynomial representing $x$,
+		and store this array in the Boolean Bit ABB.
+
+	\GetGalShares{\galois{x}}: \\
+		Let $x \in \GFtwol$ be a variable stored in the Galois ABB. \\
+		Let $P_i$ be the corrupt party.
+		The adversary provides $(x_{i-1}, x_i)$ to the functionality,
+		where $x_{i-1}, x_i \in \GFtwol$. 
+		Set $x_{i+1} = x \Gadd x_{i-1} \Gadd x_i$. \\
+		The functionality sends $(x_{j-1}, x_j)$ 
+		to $P_j$ for all $j \in \{1, 2, 3\}$.
+		Each party, $P_j$, sets its output as $(x_{j-1}, x_j)$.
+
+	\GalPad{m, \galois{x}}:\\
+		Let $x \in \GFtwol$ be a variable stored in the Galois ABB. \\
+		Given some $m \geq l$ return the natural zero-padding of 
+		$x$ to a variable from $\GFtwol$.
+		That is, viewing the variable $\GFtwol$ as a polynomial of 
+		degree at most $l-1$,
+		this is also a polynomial of degree at most $m-1$,
+		so can be interpreted as a member of $\GFtwom$,
+		where the initial coefficients are zero.
+
+	\GalAdd{\galois{x}}{\galois{y}}: Given $x$ and $y$,
+		both elements of $\GFtwol$ stored in the Galois ABB,
+		return $\galois{x \Gadd y}$. (Shorthand: $\galois{x} \Gadd \galois{y}$.)
+
+	\GalMultConst{\galois{x}}{c}: Given $x$ and $c$,
+		both elements of $\GFtwol$,
+		where $x$ is stored in the Galois ABB and $c$ is public,
+		return $\galois{x \Gmult c}$.
+
+	\GalMultWithError{\galois{x}}{\galois{y}}: Given $x$ and $y$,
+		both elements of $\GFtwol$, stored in the Galois ABB,
+		allow the adversary to select an element of \GFtwol,
+		$\delta$.
+		Return $\galois{(x \Gmult y) \Gadd \delta}$.
+
+	\GalInnerProdWithError{\gvec{X}}{\gvec{Y}}:
+		Given $\vec{X}$ and $\vec{Y}$, each of length $n$
+		holding items from $\GFtwol$,
+		allow the adversary to select an element of \GFtwol, $\delta$.
+		Let $z = (\vec{X}_0 \Gmult \vec{Y}_0) \Gadd \ldots 
+			\Gadd (\vec{X}_{n-1} \Gmult \vec{Y}_{n-1})$.
+		Return $\galois{z \Gadd \delta}$.
+
+\end{functionality}

@@ -1,0 +1,15 @@
+\section{Yao Share Representation}
+\label{sec:yaobit:repr}
+
+We represent shared bits following the Garbled Circuit scheme as described in \cite{CCS:MohRosZha15}. Although the original paper does not explicitly define a sharing format, we adopt their approach to represent Yao-shared bits, defined as follows:
+
+A bit $x$ is said to be Yao-shared (\yao{x}) if:
+
+\begin{itemize}
+	\item The two garbler parties hold the global offset used in the free-XOR technique ($\Delta$) and the wire label corresponding to the false value of $x$ ($W^0$). 
+	\item The evaluator holds $W^x$, where $W^x := W^0$ if $x$ is false, and $W^x := W^0 \oplus \Delta$ if $x$ is true.
+\end{itemize}
+
+This sharing mechanism ensures that no single party has sufficient information to learn the value of $x$. It is crucial that the same value of $\Delta$ is used consistently across all wire labels for a given circuit; conflicting values of $\Delta$ across inputs would break correctness. In this document, we use the notation $\yao{x}.W^x$ to denote the evaluator accessing $W^x$ from the Yao-share, and $\yao{x}.W^0$ and $\yao{x}.\Delta$ to denote the garbler(s) accessing the values $W^0$ and $\Delta$ from the Yao-share.
+
+An alternative way to interpret this sharing scheme is by focusing solely on the \textsf{lsb}s (least significant bits) of the wire labels. Specifically, let $\mathsf{lsb}(W^0) = p$ and $\mathsf{lsb}(W^x) = s$. Under this view, the garblers (holding $p$) and the evaluator (holding $s$) effectively possess an additive sharing of $x$, where $x = p \oplus s$. However, it is important to emphasize that this interpretation serves only as an intuitive aid for understanding the protocol and does not capture the complete sharing structure described earlier.

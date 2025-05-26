@@ -1,0 +1,42 @@
+\section{Garbling}
+
+This operation is performed by the garbler(s) during the setup phase to generate the required preprocessing material for a given circuit. While the underlying technique is based on the half-gates construction from~\cite{EC:ZahRosEva15}, the protocol’s representation follows the approach described in~\cite{EPRINT:GYWYL23}. The protocol takes as input a circuit represented in the topological order of its AND gates, along with a security parameter $k$, which defines the output length (in bits) of the employed hash function.
+
+\begin{protocol}[Garble]	
+	$\Garble{1^k}{f}$:\\
+	\indent $\Delta \gets_r \{0,1\}^{k-1} || 1$ \footnote{If $\Delta$ was already chosen in a previous instance of garble, use that value instead of choosing a new one.} \\
+	\indent for $i \in \textsf{Inputs}(f)$  do\\
+	\indent \indent  $W_i^0 \gets_r \{0,1\}^k$ \footnote{If the Yao-sharing has already been done for this input wire, then the garbler just assigns the $W^0$ value of the share.} \\
+	\indent \indent  $W_i^1 = W_i^0 \oplus \Delta$ \\
+	\indent \indent  $\vec{e}_i = W_i^0$ \\
+	\indent for $i \in \textsf{Gates}(f)$  \{\textit{in topo. order}\}:\\
+	\indent \indent  $\{a, b\} = \textsf{GateInputs}(f, i), \{c\} = \textsf{GateOutputs}(f, i)$ \\
+	\indent \indent  if $i \in \textsf{XorGates}(f)$:\\
+	\indent \indent \indent  $W_c^0 = W_a^0 \oplus W_b^0$ \\
+	\indent \indent  else if $i \in \textsf{AndGates}(f)$:\\
+	\indent \indent \indent $k_i^0 = 2 \cdot \textsf{GateIndex}(f, i) - 1$\\
+	\indent \indent \indent $k_i^1 = 2 \cdot \textsf{GateIndex}(f, i)$ \\
+	\indent \indent \indent $p_a = \textsf{lsb}(W_a^0)$ \\
+	\indent \indent \indent $p_b = \textsf{lsb}(W_b^0)$ \\
+	\indent \indent \indent $G_i^0 = H(W_a^0, k_g^0) \oplus H(W_a^1, k_g^1) \oplus p_b \Delta$ \\
+	\indent \indent \indent $G_i^1 = H(W_b^0, k_g^1) \oplus H(W_b^1, k_g^1) \oplus W_a^0$ \\
+	\indent \indent \indent $W_c = H(W_a^0 \oplus p_a \Delta, k_g^0) \oplus H(W_b^0 \oplus p_b \Delta, k_g^1) \oplus p_a p_b \Delta$ \\
+	\indent \indent \indent  $\vec{F}_i = (G_i^0, G_i^1)$ \\
+	\indent \indent  $W_c^1 = W_c^0 \oplus \Delta$ \\
+	\indent for $i \in \textsf{Outputs}(f)$:\\
+	\indent \indent  $\vec{d}_i = \textsf{lsb}(W_i^0)$ \\
+	\indent return $(\vec{F}, \vec{e}, \vec{d})$ \\
+%	
+%	\noindent
+%	$\GbAnd{W_a^0}{W_b^0}$:\\
+%	\indent $p_a = \textsf{lsb}(W_a^0)$ \\
+%	\indent $p_b = \textsf{lsb}(W_b^0)$ \\
+%	\indent $j = \textsf{NextIndex}()$\footnote{\textsf{NextIndex} is a stateful procedure that simply increments an internal counter.} \\
+%	\indent $j' = \textsf{NextIndex}()$ \\
+%	\indent $T_G = H(W_a^0, j) \oplus H(W_a^1, j) \oplus p_b \Delta$ \\
+%	\indent $W_G^0 = H(W_a^0, j) \oplus p_a T_G$ \\
+%	\indent $T_E = H(W_b^0, j') \oplus H(W_b^1, j') \oplus W_a^0$ \\
+%	\indent $W_E^0 = H(W_b^0, j') \oplus p_b (T_E \oplus W_a^0)$ \\
+%	\indent $W^0 = W_G^0 \oplus W_E^0$ \\
+%	\indent  return $(W^0, T_G, T_E)$
+\end{protocol}

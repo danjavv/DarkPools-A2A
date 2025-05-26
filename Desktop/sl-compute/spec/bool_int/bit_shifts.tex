@@ -1,0 +1,43 @@
+\section{Bit-Shift Operations}
+
+Bit-shifts are useful operations which, in the Boolean share representation,
+are very simple and efficient to implement.
+There are two types of bit-shifts: left bit-shifts and right bit-shifts.
+Both take as a parameter the number of places to shift, $s$.
+A right bit-shift moves all bits to the right by $s$ places,
+with the lowest-order $s$ bits being dropped. 
+Since the value should remain an $l$-bit number, 
+0s are placed in the $s$ highest-order locations.
+A left bit-shift moves all bits $s$ places to the left, 
+appending $s$ 0s as the new lowest-order bits
+and dropping the $s$ highest-order bits.
+A left bit-shift is equivalent to multiplying the number by $2^s$
+modulo $2^l$,
+while a right-shift is equivalent to dividing the number by
+$2^s$, dropping any remainder.
+Both protocols assume $l \geq s$.
+
+\begin{protocol}[BitShift]
+	$\LeftShift{\bint{x}}{s}$:\\
+	\indent $\bitvec{X}$ = B2BitArr($\bint{x}$)\\
+	\indent $l = $len($\bitvec{X}$) \\
+	\indent for $i = 0, \ldots, l-s-1$:\\
+	\indent \indent $\bitvec{Y_i} = \bitvec{X_{i+s}}$ \\
+	\indent for $i = l-s, \ldots, l-1$:\\
+	\indent \indent $\bitvec{Y_i} =$ InputBit(0) \\
+	\indent $\bint{y} = $BitArr2Int($\bitvec{Y}$) \\
+	\indent return $\bint{y}$ \\
+
+\noindent $\RightShift{\bint{x}}{s}$:\\
+	\indent $\bitvec{X}$ = B2BitArr($\bint{x}$)\\
+	\indent $l = $len$(\bitvec{X}$) \\
+	\indent for $i = 0, \ldots, s-1$: \\
+	\indent \indent $\bitvec{Y_i} = $ InputBit(0) \\
+	\indent for $i = s, \ldots, l-1$: \\
+	\indent \indent $\bitvec{Y_i} = \bitvec{X_{i-s}}$ \\
+	\indent $\bint{y} = $BitArr2Int($\bitvec{Y})$ \\
+	\indent return $\bint{y}$
+\end{protocol}
+
+
+

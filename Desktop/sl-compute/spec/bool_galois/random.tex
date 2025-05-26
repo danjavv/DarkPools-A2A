@@ -1,0 +1,48 @@
+\section{Initialization and Randomness Generation}
+
+It is possible, with the correct setup, to generate 
+Replicated Secret Sharing (RSS) shares
+of pseudorandom values without interaction \cite{TCC:CraDamIsh05}.
+Our Boolean Bit ABB implements this in the context of a sharing
+of Boolean values, but the technique is equally applicable
+to RSS in a Galois Field.
+This means that our Galois ABB is able to generate new random values,
+which are stored in the ABB, without any communication between parties.
+
+Specifically, the setup causes each pair of parties to hold a PRF key
+which is known to them, but unknown to the third party.
+If each pair uses this PRF to create a new pseudorandom value,
+the values create correspond to a RSS of a random value.
+
+\begin{protocol}[Setup]
+	\GalSetup{}:\\
+	\textbf{Auxilary Input}: 
+	Each party holds a security parameter $\kappa$,
+	and a pseudorandom function 
+	$F:\{0,1\}^{\kappa} \times \{0,1\}^\kappa \rightarrow \{0,1\}^\kappa$
+	\begin{enumerate}
+		\item $P_i$ picks a random key $k_i \in \{0, 1\}^\kappa$.
+		\item $P_i$ sends $k_i$ to $P_{i+1}$.
+		\item $P_i$ stores $(k_{i-1}, k_i)$.
+		\item Each $P_i$ stores a static variable $id$ and assigns $id=0$.
+	\end{enumerate}
+\end{protocol}
+
+\begin{protocol}[Random]
+	\GalRand{l}:
+	\begin{enumerate}
+		\item Let $t = \lceil l/\kappa \rceil$
+		\item Each $P_i$ 
+			set $x_i$ to the first $l$ bits of
+			$F_{k_i}(id) || \ldots || F_{k_i}(id+t-1)$.\\
+			(In the common case, $t=1$, this is simply
+			the first $l$ bits of $F_{k_i}(id)$.)
+		\item Each $P_i$ 
+			set $x_{i-1}$ to the first $l$ bits of
+			$F_{k_{i-1}}(id) || \ldots || F_{k_{i-1}}(id+t-1)$.
+		\item Each $P_i$ sets $y_i = \BoolArrToGal{x_i}$ and\\ 
+			$y_{i-1} = \BoolArrToGal{x_{i-1}}$.
+		\item Set $id = id + t$.
+		\item Each $P_i$ sets its share as $(y_{i-1}, y_i)$. 
+	\end{enumerate}
+\end{protocol}
