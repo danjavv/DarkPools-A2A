@@ -71,10 +71,10 @@ See the Quickstart section below for the recommended way to set up and run the d
 ![flow_diagram](https://github.com/user-attachments/assets/13272904-ddcf-434f-b6ab-91d13ffe47fe)
 
 **Order Matching Logic**
-![Uploading Order_matching_logic.svg…]()
+https://www.mermaidchart.com/raw/a6aa7998-016e-4425-9f4c-36accc11ac55?theme=light&version=v0.1&format=svg
 
 **Comparison protocol**
-![Uploading run_compare_ge.svg…]()
+https://www.mermaidchart.com/raw/292eeb14-4317-45f0-9921-61bf2cfc088a?theme=light&version=v0.1&format=svg
 
 1. The Dark Pools Agent receives orders from trading agents and matches them based on price and quantity
 2. The Market Data Agent provides real-time price information for stocks
