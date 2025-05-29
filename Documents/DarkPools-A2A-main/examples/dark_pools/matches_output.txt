@@ -1,0 +1,16 @@
+[MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
+[MATCH FOUND] [ADMIN] Match: AAPL 1000 @ 1000 between trader1 and trader2
+[MPC MATCH FOUND] AAPL 1000 @ 1000 between trader1 and trader2
