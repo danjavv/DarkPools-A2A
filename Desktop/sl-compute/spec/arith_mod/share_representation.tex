@@ -1,9 +1,0 @@
-\section{Share Representation}
-
-We use Replicated Secret Sharing to represent shares of a modular arithmetic value in $\Zp$, where $p$ is a prime.
-Specifically, to store a variable $x \in \Zp$, we define three shares $s_1, s_2, s_3 \in \Zp$, such that:
-$$s_1 \MAadd s_2 \MAadd s_3 = x$$
-Each party $P_i$ holds the pair $(t_i, s_i)$, where $t_i = s_i \MAadd s_{i - 1}$.
-
-We denote the Modular Arithmetic RSS sharing of $x$ using this scheme as $\modarith{x}$. 
-Security is defined similarly to the arithmetic over $\Ztwol$: any single party's view of the shares of an input value should appear uniformly random (conditioned on prior knowledge), and the shares of computed values (e.g., from additions or multiplications) should not reveal any more information than what is implied by the operation itself.

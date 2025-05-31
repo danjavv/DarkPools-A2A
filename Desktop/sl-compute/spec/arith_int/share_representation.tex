@@ -1,9 +1,0 @@
-\section{Share Representation}
-
-We use Replicated Secret Sharing to represent shares of an arithmetic integer.
-Specifically, to store some variable $x \in \Ztwol$, there are three shares $s_1, s_2, s_3 \in \Ztwol$, which satisfy $s_1 \Aadd s_2 \Aadd s_3 = x$.
-Party $P_i$ holds shares $(t_i, s_i)$, where $t_i = s_i \Aadd s_{i - 1}$.
-
-We denote the Arithmetic RSS sharing of $x$ using this scheme as $\aint{x}$. Security is defined in terms of the operation protocols being simulatable if they were replaced by the Arithmetic Integer ABB functionality.
-In short, shares that are the result of an Input should appear completely random to a single party (conditioned on any pre-existing knowledge they have of the input variable).
-Correlations between shares of calculated values (e.g. the input and output shares in an addition) should reveal no further information to any single party beyond which calculation was performed.
