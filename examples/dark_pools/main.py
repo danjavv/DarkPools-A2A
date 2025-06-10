@@ -4,16 +4,46 @@ from market_data_agent import MarketDataAgent
 from trading_agent import TradingAgent
 from server import Server
 from agent_base import Agent
-from a2a.types import Message, Role
+from a2a.types import Message, Role, AgentCard, AgentCapabilities, AgentSkill, TextPart
 from mpc_coordinator_agent import MPCCoordinatorAgent
+import uuid
 
 class AdminAgent(Agent):
     def __init__(self, name="admin_agent"):
         super().__init__(name)
 
+    def agent_card(self) -> AgentCard:
+        return AgentCard(
+            authentication=None,
+            capabilities=AgentCapabilities(
+                pushNotifications=True,
+                stateTransitionHistory=False,
+                streaming=False
+            ),
+            defaultInputModes=["application/json"],
+            defaultOutputModes=["application/json"],
+            description="An admin agent that receives match notifications.",
+            documentationUrl=None,
+            name=self.name,
+            provider=None,
+            skills=[
+                AgentSkill(
+                    id="receive_match_notification",
+                    name="Receive Match Notification",
+                    description="Receives notifications when a match is found.",
+                    examples=["Receive a match notification for AAPL."],
+                    inputModes=["application/json"],
+                    outputModes=["application/json"],
+                    tags=["admin", "notification"]
+                )
+            ],
+            url="",
+            version="1.0.0"
+        )
+
     async def handle_message(self, message: Message):
-        if message.role == Role.agent and message.content.get("type") == "admin_match_notification":
-            summary = message.content["summary"]
+        if message.role == Role.agent and message.parts and message.parts[0].root.text == "admin_match_notification":
+            summary = message.parts[0].root.metadata["summary"]
             match_str = f"[MATCH FOUND] [ADMIN] Match: {summary['symbol']} {summary['quantity']} @ {summary['price']} between {summary['parties'][0]} and {summary['parties'][1]}"
             print(match_str, flush=True)
             with open("matches_output.txt", "a") as f:

@@ -31,6 +31,18 @@ See the Quickstart section below for the recommended way to set up and run the d
 
 ## Quickstart: Running the Demo After Cloning
 
+1. **Run the Rust backend:**
+   ```bash
+   cd backend && cargo build
+   pkill -f relay_server (if it is already running)
+   cd backend && cargo run --bin relay_server (it starts the relay server and it should be visible like this - Relay server listening on ws://0.0.0.0:9007)
+   cd backend && cargo run --bin backend (Output should be like this - 
+   Launching 3 parties…
+   output buy:abc1 sell: abc2
+   output buy:abc3 sell: abc4
+   All parties have finished.)
+   ```
+
 1. **Clone the repository:**
    ```bash
    git clone <your-repo-url>

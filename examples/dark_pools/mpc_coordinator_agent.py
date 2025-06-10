@@ -1,6 +1,6 @@
 from agent_base import Agent
 from typing import Dict, List, Optional
-from a2a.types import Message, Role
+from a2a.types import Message, Role, AgentCard, AgentCapabilities, AgentSkill, TextPart, Part
 from utils import decrypt_order
 import uuid
 from mpyc.runtime import mpc
@@ -11,13 +11,42 @@ class MPCCoordinatorAgent(Agent):
         self.buy_queues: Dict[str, List[Dict]] = {}
         self.sell_queues: Dict[str, List[Dict]] = {}
 
+    def agent_card(self) -> AgentCard:
+        return AgentCard(
+            authentication=None,
+            capabilities=AgentCapabilities(
+                pushNotifications=False,
+                stateTransitionHistory=True,
+                streaming=False
+            ),
+            defaultInputModes=["application/json"],
+            defaultOutputModes=["application/json"],
+            description="An MPC coordinator agent that matches encrypted buy and sell orders using secure computation.",
+            documentationUrl=None,
+            name=self.name,
+            provider=None,
+            skills=[
+                AgentSkill(
+                    id="mpc_match_orders",
+                    name="MPC Match Orders",
+                    description="Match encrypted buy and sell orders using MPC.",
+                    examples=["Match a buy and sell order for AAPL using MPC."],
+                    inputModes=["application/json"],
+                    outputModes=["application/json"],
+                    tags=["mpc", "matching"]
+                )
+            ],
+            url="",
+            version="1.0.0"
+        )
+
     async def handle_message(self, message: Message) -> Optional[Message]:
         if message.role in [Role.user, Role.agent]:
-            if message.content.get("type") == "mpc_submit_order":
-                encrypted_order = message.content["encrypted_order"]
-                order_id = message.content["order_id"]
-                agent_id = message.content["agent_id"]
-                timestamp = message.content["timestamp"]
+            if message.parts and message.parts[0].root.text == "mpc_submit_order":
+                encrypted_order = message.parts[0].root.metadata["encrypted_order"]
+                order_id = message.parts[0].root.metadata["order_id"]
+                agent_id = message.parts[0].root.metadata["agent_id"]
+                timestamp = message.parts[0].root.metadata["timestamp"]
                 order = decrypt_order(encrypted_order)
                 symbol = order["symbol"]
                 side = order["side"]
@@ -43,7 +72,6 @@ class MPCCoordinatorAgent(Agent):
             sell_entry = sell_q[0]
             buy_order = buy_entry["order"]
             sell_order = sell_entry["order"]
-            # Use MPyC for secure computation
             secint = mpc.SecInt()
             await mpc.start()
             s_buy_price = secint(buy_order["price"])
@@ -64,12 +92,16 @@ class MPCCoordinatorAgent(Agent):
                     "parties": [buy_entry["agent_id"], sell_entry["agent_id"]]
                 }
                 # Notify DarkPoolsAgent of the match
-                await self.send_message({
-                    "type": "mpc_match_found",
-                    "summary": summary,
-                    "buy_order_id": buy_entry["order_id"],
-                    "sell_order_id": sell_entry["order_id"]
-                }, recipient="dark_pools_agent")
+                match_msg = Message(
+                    role=Role.agent,
+                    messageId=str(uuid.uuid4()),
+                    parts=[Part(root=TextPart(text="mpc_match_found", metadata={
+                        "summary": summary,
+                        "buy_order_id": buy_entry["order_id"],
+                        "sell_order_id": sell_entry["order_id"]
+                    }))]
+                )
+                await self.send_message(match_msg, recipient="dark_pools_agent")
                 buy_q.pop(0)
                 sell_q.pop(0)
             else:

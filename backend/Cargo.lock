@@ -2145,7 +2145,7 @@ checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 [[package]]
 name = "sl-compute"
 version = "0.1.0"
-source = "git+https://github.com/silence-laboratories/sl-compute.git?branch=sahamati-queries#53e643e74057d5859352889b552377ffbf4f0502"
+source = "git+ssh://git@github.com/silence-laboratories/sl-compute.git?branch=sahamati-queries#63e65c7651ae1c13bfb99a644d7a47c30509c4a3"
 dependencies = [
  "aead",
  "aes",

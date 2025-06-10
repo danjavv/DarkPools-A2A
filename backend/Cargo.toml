@@ -24,7 +24,7 @@ num-bigint = "0.4"
 crypto-bigint = { version = "0.5.5", features = ["serde"] }
 num-traits = "0.2"
 sl-mpc-mate = { git = "https://github.com/silence-laboratories/sl-crypto.git", rev = "ff63353", features = ["simple-relay"] }
-sl-compute = { git = "https://github.com/silence-laboratories/sl-compute.git", branch = "sahamati-queries" }
+sl-compute = { git = "ssh://git@github.com/silence-laboratories/sl-compute.git", branch = "sahamati-queries" }
 merlin = "3.0.0"
 tokio = { version = "1.24.1", features = ["full"] }
 elliptic-curve = { version = "0.13" }

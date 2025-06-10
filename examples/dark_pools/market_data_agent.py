@@ -1,8 +1,9 @@
 from agent_base import Agent
 from typing import Dict, Optional
-from a2a.types import Message, Role
+from a2a.types import Message, Role, AgentCard, AgentCapabilities, AgentSkill, TextPart
 import yfinance as yf
 from datetime import datetime
+import uuid
 
 class MarketDataAgent(Agent):
     def __init__(self):
@@ -10,30 +11,52 @@ class MarketDataAgent(Agent):
         self.cache: Dict[str, Dict] = {}  # symbol -> price data
         self.cache_timeout = 60  # seconds
 
+    def agent_card(self) -> AgentCard:
+        return AgentCard(
+            authentication=None,
+            capabilities=AgentCapabilities(
+                pushNotifications=False,
+                stateTransitionHistory=False,
+                streaming=False
+            ),
+            defaultInputModes=["application/json"],
+            defaultOutputModes=["application/json"],
+            description="A market data agent that provides real-time price information for stocks.",
+            documentationUrl=None,
+            name=self.name,
+            provider=None,
+            skills=[
+                AgentSkill(
+                    id="query_price",
+                    name="Query Price",
+                    description="Get the current price for a symbol.",
+                    examples=["Query the price for AAPL."],
+                    inputModes=["application/json"],
+                    outputModes=["application/json"],
+                    tags=["market data", "price"]
+                )
+            ],
+            url="",
+            version="1.0.0"
+        )
+
     async def handle_message(self, message: Message) -> Optional[Message]:
         if message.role == Role.user:
-            if "query_price" in message.content:
-                symbol = message.content["query_price"]["symbol"]
+            if message.parts and message.parts[0].root.text == "query_price":
+                symbol = message.parts[0].root.metadata["symbol"]
                 price_data = await self._get_price(symbol)
-                
                 if price_data:
                     return Message(
                         role=Role.agent,
-                        content={
-                            "type": "price_data",
-                            "symbol": symbol,
-                            "data": price_data
-                        }
+                        messageId=str(uuid.uuid4()),
+                        parts=[TextPart(text="price_data", metadata={"symbol": symbol, "data": price_data})]
                     )
                 else:
                     return Message(
                         role=Role.agent,
-                        content={
-                            "type": "error",
-                            "message": f"Could not fetch price data for {symbol}"
-                        }
+                        messageId=str(uuid.uuid4()),
+                        parts=[TextPart(text="error", metadata={"message": f"Could not fetch price data for {symbol}"})]
                     )
-        
         return None
 
     async def _get_price(self, symbol: str) -> Optional[Dict]:
