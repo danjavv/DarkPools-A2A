@@ -36,11 +36,8 @@ See the Quickstart section below for the recommended way to set up and run the d
    cd backend && cargo build
    pkill -f relay_server (if it is already running)
    cd backend && cargo run --bin relay_server (it starts the relay server and it should be visible like this - Relay server listening on ws://0.0.0.0:9007)
-   cd backend && cargo run --bin backend (Output should be like this - 
-   Launching 3 parties…
-   output buy:abc1 sell: abc2
-   output buy:abc3 sell: abc4
-   All parties have finished.)
+   cd backend && cargo run --bin backend (Output should be like this - Order server listening on 127.0.0.1:8080)
+   cd .. && python client.py (it should receive orders, launch the 3 parties and do the mpc computation)
    ```
 
 1. **Clone the repository:**

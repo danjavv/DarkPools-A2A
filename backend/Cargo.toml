@@ -41,5 +41,5 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false }
 anyhow = "1.0.98"
 futures-util = { version = "0.3.30", default-features = false }
-bytes = { version = "1" }
+bytes = "1"
 tokio-tungstenite = { version = "0.26", features =["rustls-tls-webpki-roots"]  } # because axum uses this version
