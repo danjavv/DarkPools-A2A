@@ -8,10 +8,9 @@ This demo showcases a dark pools trading system using the A2A Python SDK. The sy
 2. Market Data Agent - Provides real-time market information
 3. Trading Agents - Submit buy/sell orders to the dark pool
 
-## Google Docs 
+## FLOW DIAGRAM
 
-1. https://docs.google.com/document/d/12UkfykkRZauD-IjDgWmcboLXSk3wzIrNPbmSfp0kRwA/edit?usp=sharing
-2. https://docs.google.com/document/d/1QcgBR1hDCae-TbnBORLisdACFGeNcgModAH_mN37ZEk/edit?usp=sharing
+https://docs.google.com/document/d/1BnIDFA_Iocx2070rXPYa_xA6ZKpulsoszzpTKd5n0qM/edit?usp=sharing
 
 ## Video Demos
 
@@ -46,44 +45,7 @@ See the Quickstart section below for the recommended way to set up and run the d
    cd examples/dark_pools && python main.py
    ```
 
-1. **Clone the repository:**
-   ```bash
-   git clone <your-repo-url>
-   cd DarkPools-A2A/examples/dark_pools
-   ```
-
-2. **(Recommended) Create and activate a Python 3.9 environment:**
-   ```bash
-   conda create -n darkpools-demo python=3.9
-   conda activate darkpools-demo
-   ```
-   Or with `venv`:
-   ```bash
-   python3.9 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install required dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Install the main package in development mode (from the repo root):**
-   ```bash
-   cd ../../..
-   pip install -e .
-   cd examples/dark_pools
-   ```
-
-5. **Run the demo:**
-   ```bash
-   python main.py
-   ```
-
 ## How it Works
-
-**Overall Flow**
-![flow_diagram](https://github.com/user-attachments/assets/13272904-ddcf-434f-b6ab-91d13ffe47fe)
 
 **Order Matching Logic**
 https://www.mermaidchart.com/raw/a6aa7998-016e-4425-9f4c-36accc11ac55?theme=light&version=v0.1&format=svg
