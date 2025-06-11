@@ -39,6 +39,12 @@ See the Quickstart section below for the recommended way to set up and run the d
    cd backend && cargo run --bin backend (Output should be like this - Order server listening on 127.0.0.1:8080)
    cd .. && python client.py (it should receive orders, launch the 3 parties and do the mpc computation)
    ```
+   or
+
+1. **Simply run the main.py file to simulate everything**
+   ```bash
+   cd examples/dark_pools && python main.py
+   ```
 
 1. **Clone the repository:**
    ```bash

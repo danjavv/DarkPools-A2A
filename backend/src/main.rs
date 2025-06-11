@@ -166,10 +166,49 @@ async fn handle_server() {
     let ress: Vec<Vec<(OrderShare, OrderShare)>> = results.into_iter().map(|r| r.1).collect();
 
     assert_eq!(ress.len(), 3);
+    // Open file for writing matches
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open("order_matches.txt")
+        .expect("Failed to open order_matches.txt");
+
     for (b, s) in &ress[0] {
+        let output = format!(
+            "Match Details:\n\
+            Buy Order:\n\
+            - Symbol: {}\n\
+            - Quantity: {:?}\n\
+            - Price: {:?}\n\
+            - Min Execution: {:?}\n\
+            - Timestamp: {}\n\
+            Sell Order:\n\
+            - Symbol: {}\n\
+            - Quantity: {:?}\n\
+            - Price: {:?}\n\
+            - Min Execution: {:?}\n\
+            - Timestamp: {}\n\
+            --------------------\n",
+            b.symbol,
+            b.quantity,
+            b.price,
+            b.min_execution,
+            b.timestamp,
+            s.symbol,
+            s.quantity,
+            s.price,
+            s.min_execution,
+            s.timestamp
+        );
         println!("output buy:{} sell: {}", b.symbol, s.symbol);
+        std::io::Write::write_all(&mut file, output.as_bytes())
+            .expect("Failed to write to order_matches.txt");
     }
-    println!("All parties have finished.");
+    let finish_msg = "All parties have finished.\n";
+    println!("{}", finish_msg.trim());
+    std::io::Write::write_all(&mut file, finish_msg.as_bytes())
+        .expect("Failed to write to order_matches.txt");
 }
 
 #[tokio::main]
