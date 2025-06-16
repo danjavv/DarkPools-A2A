@@ -10,7 +10,9 @@ This demo showcases a dark pools trading system using the A2A Python SDK. The sy
 
 ## FLOW DIAGRAM
 
-https://docs.google.com/document/d/1BnIDFA_Iocx2070rXPYa_xA6ZKpulsoszzpTKd5n0qM/edit?usp=sharing
+![current_flow_final_fixed](https://github.com/user-attachments/assets/b237e270-c1db-4218-ad3b-6ea752670db3)
+![alternative_flow_redrawn](https://github.com/user-attachments/assets/e5e5b222-0369-4885-bf5f-bcce531cb0be)
+![silence_a2a_sdk](https://github.com/user-attachments/assets/4a212dfd-6694-424d-ac6b-e2203dab3667)
 
 ## Video Demos
 
