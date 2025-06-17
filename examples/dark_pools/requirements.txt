@@ -1,2 +1,5 @@
 yfinance>=0.2.36
-mpyc>=0.9.8 
+mpyc>=0.9.8
+streamlit>=1.32.0
+pandas>=2.2.0
+plotly>=5.18.0 
