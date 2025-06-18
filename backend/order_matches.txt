@@ -1,0 +1,61 @@
+All parties have finished.
+All parties have finished.
+Match Details:
+Buy Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 11:58:45.814646 UTC
+Sell Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 11:58:46.817798 UTC
+--------------------
+All parties have finished.
+Match Details:
+Buy Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 12:02:22.904784 UTC
+Sell Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 12:02:23.910877 UTC
+--------------------
+All parties have finished.
+Match Details:
+Buy Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 12:03:55.907463 UTC
+Sell Order:
+- Symbol: AAPL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Price: ArithmeticShare { value1: Uint(0x0000000000025800), value2: Uint(0x0000000000025800) }
+- Min Execution: ArithmeticShare { value1: Uint(0x000000000000C800), value2: Uint(0x000000000000C800) }
+- Timestamp: 2025-06-18 12:03:56.910316 UTC
+--------------------
+Match Details:
+Buy Order:
+- Symbol: GOOGL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000032000), value2: Uint(0x0000000000032000) }
+- Price: ArithmeticShare { value1: Uint(0x00000000002BC000), value2: Uint(0x00000000002BC000) }
+- Min Execution: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Timestamp: 2025-06-18 12:03:57.912214 UTC
+Sell Order:
+- Symbol: GOOGL
+- Quantity: ArithmeticShare { value1: Uint(0x0000000000032000), value2: Uint(0x0000000000032000) }
+- Price: ArithmeticShare { value1: Uint(0x00000000002BC000), value2: Uint(0x00000000002BC000) }
+- Min Execution: ArithmeticShare { value1: Uint(0x0000000000019000), value2: Uint(0x0000000000019000) }
+- Timestamp: 2025-06-18 12:03:58.915682 UTC
+--------------------
+All parties have finished.
