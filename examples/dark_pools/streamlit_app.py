@@ -37,9 +37,34 @@ market_data_agent = st.session_state['market_data_agent']
 dark_pools_agent = st.session_state['dark_pools_agent']
 trading_agent = st.session_state['trading_agent']
 
-# --- Session Selector ---
-if 'selected_session' not in st.session_state:
-    st.session_state.selected_session = 'default'
+# --- Global Session Selector ---
+if 'all_sessions' not in st.session_state:
+    st.session_state['all_sessions'] = ['default']
+if 'current_session' not in st.session_state:
+    st.session_state['current_session'] = 'default'
+
+# Session selector UI at the top
+st.sidebar.header("Session Management")
+session_name = st.sidebar.selectbox(
+    "Select Session",
+    st.session_state['all_sessions'],
+    index=st.session_state['all_sessions'].index(st.session_state['current_session']) if st.session_state['current_session'] in st.session_state['all_sessions'] else 0,
+    key="global_session_select"
+)
+st.session_state['current_session'] = session_name
+
+# Option to create a new session
+def create_new_session():
+    new_session = st.sidebar.text_input("New Session Name", "", key="new_session_name")
+    if st.sidebar.button("Create Session", key="create_session_btn") and new_session and new_session not in st.session_state['all_sessions']:
+        st.session_state['all_sessions'].append(new_session)
+        st.session_state['current_session'] = new_session
+        st.experimental_rerun()
+create_new_session()
+
+# Helper to get the current session name
+def get_current_session():
+    return st.session_state['current_session']
 
 def get_all_sessions_for_agent(agent_name):
     if agent_name == 'dark_pools':
@@ -68,8 +93,7 @@ with trading_tab:
                 end tell
                 '''
                 subprocess.Popen(["osascript", "-e", osa_script])
-                # Log event and state
-                context_id = st.session_state.get('trading_session_select', 'default')
+                context_id = get_current_session()
                 trading_agent.update_session(context_id, event="Servers started", state="servers_started")
                 st.success("Servers started in new Terminal windows (relay_server and backend).")
             except Exception as e:
@@ -79,7 +103,7 @@ with trading_tab:
             try:
                 subprocess.run(["pkill", "-f", "relay_server"])
                 subprocess.run(["pkill", "-f", "backend"])
-                context_id = st.session_state.get('trading_session_select', 'default')
+                context_id = get_current_session()
                 trading_agent.update_session(context_id, event="Servers stopped", state="servers_stopped")
                 st.success("Servers stopped (relay_server and backend).")
             except Exception as e:
@@ -98,7 +122,7 @@ with trading_tab:
     if queue_submitted:
         o_type_bool_q = False if o_type_q == "Buy" else True
         st.session_state.orders.append((o_type_bool_q, symbol_q, int(quantity_q), int(price_q), int(min_execution_q)))
-        context_id = st.session_state.get('trading_session_select', 'default')
+        context_id = get_current_session()
         trading_agent.update_session(
             context_id,
             event=f"Order queued: {o_type_q} {quantity_q} {symbol_q} @ {price_q} (min exec: {min_execution_q})",
@@ -119,7 +143,7 @@ with trading_tab:
             st.info(f"Processing {len(st.session_state.orders)} orders...")
             from trading_agent import order as trading_order
             processed_symbols = []
-            context_id = st.session_state.get('trading_session_select', 'default')
+            context_id = get_current_session()
             for o in st.session_state.orders:
                 trading_agent.update_session(
                     context_id,
@@ -169,10 +193,7 @@ with trading_tab:
         else:
             st.warning("No orders to process.")
 
-    st.subheader("Session Selector")
-    sessions = list(get_all_sessions_for_agent('trading').keys())
-    selected_session = st.selectbox("Select Session", sessions, key="trading_session_select")
-    session_data = get_all_sessions_for_agent('trading').get(selected_session, {})
+    session_data = get_all_sessions_for_agent('trading').get(get_current_session(), {})
     st.write("**State History:**")
     st.json(session_data.get('state', []))
     st.write("**Artifacts History:**")
@@ -206,10 +227,7 @@ with market_data_tab:
         else:
             st.error(f"Could not fetch price data for {symbol_query}.")
 
-    st.subheader("Session Selector")
-    sessions = list(get_all_sessions_for_agent('market_data').keys())
-    selected_session = st.selectbox("Select Session", sessions, key="market_data_session_select")
-    session_data = get_all_sessions_for_agent('market_data').get(selected_session, {})
+    session_data = get_all_sessions_for_agent('market_data').get(get_current_session(), {})
     st.write("**State History:**")
     st.json(session_data.get('state', []))
     st.write("**Artifacts History:**")
@@ -259,14 +277,12 @@ with dark_pools_tab:
     st.subheader("Trading Statistics")
     st.json(stats)
 
-    st.subheader("Session Selector")
-    sessions = list(get_all_sessions_for_agent('dark_pools').keys())
-    selected_session = st.selectbox("Select Session", sessions, key="dark_pools_session_select")
-    session_data = get_all_sessions_for_agent('dark_pools').get(selected_session, {})
-    st.write(f"**State:** {session_data.get('state', '')}")
-    st.write("**Artifacts:**")
+    session_data = get_all_sessions_for_agent('dark_pools').get(get_current_session(), {})
+    st.write("**State History:**")
+    st.json(session_data.get('state', []))
+    st.write("**Artifacts History:**")
     st.json(session_data.get('artifacts', []))
-    st.write("**Events:**")
+    st.write("**Events History:**")
     st.json(session_data.get('events', []))
-    st.write("**Eval:**")
-    st.json(session_data.get('eval', {})) 
+    st.write("**Eval History:**")
+    st.json(session_data.get('eval', [])) 
