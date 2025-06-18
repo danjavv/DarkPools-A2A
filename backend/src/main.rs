@@ -17,13 +17,6 @@ use sl_compute::{
 use tokio::task::JoinSet;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-enum Message {
-    Order(Order),
-    ComputationSignal { action: String },
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 struct Order {
     o_type: bool, // false for buy, true for sell
     symbol: String,
@@ -40,7 +33,6 @@ async fn handle_server() {
     println!("Order server listening on 127.0.0.1:8080");
 
     let mut orders = VecDeque::new();
-    let mut computation_running = false;
     let timeout = Duration::from_secs(5); // 5 seconds timeout for no new orders
 
     loop {
@@ -59,8 +51,8 @@ async fn handle_server() {
                 }
 
                 if !buffer.is_empty() {
-                    match serde_json::from_slice::<Message>(&buffer) {
-                        Ok(Message::Order(order)) => {
+                    match serde_json::from_slice::<Order>(&buffer) {
+                        Ok(order) => {
                             println!("Received order: {:?}", order);
                             orders.push_back((
                                 order.o_type,
@@ -71,40 +63,19 @@ async fn handle_server() {
                                 Utc::now()
                             ));
                         }
-                        Ok(Message::ComputationSignal { action }) => {
-                            println!("Received computation signal: {}", action);
-                            if action == "start" && !computation_running {
-                                computation_running = true;
-                                if !orders.is_empty() {
-                                    println!("Starting computation with {} orders", orders.len());
-                                    process_orders(&orders).await;
-                                } else {
-                                    println!("No orders to process");
-                                }
-                            } else if action == "stop" {
-                                computation_running = false;
-                                println!("Computation stopped");
-                            }
-                        }
-                        Err(e) => println!("Failed to parse message: {}", e),
+                        Err(e) => println!("Failed to parse order: {}", e),
                     }
                 }
             }
             // Timeout after no new orders
             _ = tokio::time::sleep(timeout) => {
-                if !orders.is_empty() && computation_running {
-                    println!("Processing {} orders after timeout", orders.len());
-                    process_orders(&orders).await;
+                if !orders.is_empty() {
+                    println!("No new orders received for {} seconds, processing {} orders", timeout.as_secs(), orders.len());
+                    break;
                 }
             }
         }
     }
-}
-
-async fn process_orders(
-    orders: &VecDeque<(bool, String, u64, u64, u64, chrono::DateTime<chrono::Utc>)>,
-) {
-    println!("Processing {} orders...", orders.len());
 
     // Convert received orders to OrderShare format
     let mut orders_p1 = Vec::new();
@@ -112,43 +83,43 @@ async fn process_orders(
     let mut orders_p3 = Vec::new();
 
     for (typ, symb, quan, pric, mine, ts) in orders {
-        let quan1 = ArithmeticShare::from_constant(&FieldElement::from(*quan), 0);
-        let quan2 = ArithmeticShare::from_constant(&FieldElement::from(*quan), 1);
-        let quan3 = ArithmeticShare::from_constant(&FieldElement::from(*quan), 2);
+        let quan1 = ArithmeticShare::from_constant(&FieldElement::from(quan), 0);
+        let quan2 = ArithmeticShare::from_constant(&FieldElement::from(quan), 1);
+        let quan3 = ArithmeticShare::from_constant(&FieldElement::from(quan), 2);
 
-        let pric1 = ArithmeticShare::from_constant(&FieldElement::from(*pric), 0);
-        let pric2 = ArithmeticShare::from_constant(&FieldElement::from(*pric), 1);
-        let pric3 = ArithmeticShare::from_constant(&FieldElement::from(*pric), 2);
+        let pric1 = ArithmeticShare::from_constant(&FieldElement::from(pric), 0);
+        let pric2 = ArithmeticShare::from_constant(&FieldElement::from(pric), 1);
+        let pric3 = ArithmeticShare::from_constant(&FieldElement::from(pric), 2);
 
-        let mine1 = ArithmeticShare::from_constant(&FieldElement::from(*mine), 0);
-        let mine2 = ArithmeticShare::from_constant(&FieldElement::from(*mine), 1);
-        let mine3 = ArithmeticShare::from_constant(&FieldElement::from(*mine), 2);
+        let mine1 = ArithmeticShare::from_constant(&FieldElement::from(mine), 0);
+        let mine2 = ArithmeticShare::from_constant(&FieldElement::from(mine), 1);
+        let mine3 = ArithmeticShare::from_constant(&FieldElement::from(mine), 2);
 
         orders_p1.push(OrderShare {
-            o_type: *typ,
+            o_type: typ,
             symbol: symb.clone(),
             quantity: quan1,
             price: pric1,
             min_execution: mine1,
-            timestamp: *ts,
+            timestamp: ts,
         });
 
         orders_p2.push(OrderShare {
-            o_type: *typ,
+            o_type: typ,
             symbol: symb.clone(),
             quantity: quan2,
             price: pric2,
             min_execution: mine2,
-            timestamp: *ts,
+            timestamp: ts,
         });
 
         orders_p3.push(OrderShare {
-            o_type: *typ,
-            symbol: symb.clone(),
+            o_type: typ,
+            symbol: symb,
             quantity: quan3,
             price: pric3,
             min_execution: mine3,
-            timestamp: *ts,
+            timestamp: ts,
         });
     }
 
@@ -195,10 +166,6 @@ async fn process_orders(
     let ress: Vec<Vec<(OrderShare, OrderShare)>> = results.into_iter().map(|r| r.1).collect();
 
     assert_eq!(ress.len(), 3);
-
-    // Clear the file before writing new matches
-    std::fs::write("order_matches.txt", "").expect("Failed to clear order_matches.txt");
-
     // Open file for writing matches
     let mut file = std::fs::OpenOptions::new()
         .write(true)
@@ -207,7 +174,6 @@ async fn process_orders(
         .open("order_matches.txt")
         .expect("Failed to open order_matches.txt");
 
-    let mut match_count = 0;
     for (b, s) in &ress[0] {
         let output = format!(
             "Match Details:\n\
@@ -235,13 +201,11 @@ async fn process_orders(
             s.min_execution,
             s.timestamp
         );
-        println!("Match found: Buy {} Sell {}", b.symbol, s.symbol);
+        println!("output buy:{} sell: {}", b.symbol, s.symbol);
         std::io::Write::write_all(&mut file, output.as_bytes())
             .expect("Failed to write to order_matches.txt");
-        match_count += 1;
     }
-
-    let finish_msg = format!("Computation completed. Found {} matches.\n", match_count);
+    let finish_msg = "All parties have finished.\n";
     println!("{}", finish_msg.trim());
     std::io::Write::write_all(&mut file, finish_msg.as_bytes())
         .expect("Failed to write to order_matches.txt");
