@@ -7,6 +7,7 @@ import os
 import socket
 import json
 import time
+from collections import defaultdict, deque
 
 st.set_page_config(page_title="Dark Pools A2A Demo", layout="wide")
 
@@ -68,9 +69,32 @@ with trading_tab:
         if st.session_state.orders:
             st.info(f"Processing {len(st.session_state.orders)} orders...")
             from trading_agent import order as trading_order
+            processed_symbols = []
             for o in st.session_state.orders:
                 trading_order(*o)
+                action = "buy" if not o[0] else "sell"
+                processed_symbols.append((action, o[1]))
                 time.sleep(1)  # Simulate processing delay
+            # Group buys and sells by symbol
+            buys = defaultdict(deque)
+            sells = defaultdict(deque)
+            for action, symbol in processed_symbols:
+                if action == "buy":
+                    buys[symbol].append(symbol)
+                else:
+                    sells[symbol].append(symbol)
+            match_lines = []
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for symbol in set(buys.keys()).union(sells.keys()):
+                while buys[symbol] and sells[symbol]:
+                    match_lines.append(f"{now} buy:{symbol} sell:{symbol}")
+                    buys[symbol].popleft()
+                    sells[symbol].popleft()
+            if match_lines:
+                match_lines.append("All parties have finished.")
+                with open(os.path.join(os.path.dirname(__file__), "matches_output.txt"), "a") as f:
+                    for line in match_lines:
+                        f.write(line + "\n")
             st.session_state.orders = []
             st.success("All queued orders processed!")
         else:
@@ -103,19 +127,39 @@ with market_data_tab:
 # --- Dark Pools Agent Tab ---
 with dark_pools_tab:
     st.header("Dark Pools Agent: Orders & Trading Statistics")
-    # TODO: Integrate with dark_pools_agent.py to fetch real orders and stats
-    # Placeholder orders
-    orders = [
-        {"order_id": "1", "symbol": "AAPL", "type": "Buy", "quantity": 100, "price": 150.0, "status": "Matched"},
-        {"order_id": "2", "symbol": "GOOGL", "type": "Sell", "quantity": 200, "price": 2800.0, "status": "Open"},
-    ]
+    st.subheader("Order Matches")
+    matches_file = os.path.join(os.path.dirname(__file__), "matches_output.txt")
+    if st.button("Refresh Matches"):
+        st.session_state["matches_refresh"] = not st.session_state.get("matches_refresh", False)
+    matches_text = ""
+    if os.path.exists(matches_file):
+        with open(matches_file, "r") as f:
+            matches_text = f.read()
+    if matches_text.strip():
+        st.text(matches_text)
+    else:
+        st.info("No matches found.")
+    # Show submitted orders (actual queued orders)
     st.subheader("Submitted Orders")
-    st.dataframe(pd.DataFrame(orders))
+    if 'orders' in st.session_state and st.session_state.orders:
+        orders_data = [
+            {
+                "order_type": "Buy" if not o[0] else "Sell",
+                "symbol": o[1],
+                "quantity": o[2],
+                "price": o[3],
+                "min_execution": o[4]
+            }
+            for o in st.session_state.orders
+        ]
+        st.dataframe(pd.DataFrame(orders_data))
+    else:
+        st.info("No submitted orders queued.")
     # Placeholder statistics
     stats = {
-        "Total Orders": 2,
-        "Matched Orders": 1,
-        "Open Orders": 1
+        "Total Orders": len(st.session_state.orders) if 'orders' in st.session_state else 0,
+        "Matched Orders": 0,  # You can update this if you track matches
+        "Open Orders": len(st.session_state.orders) if 'orders' in st.session_state else 0
     }
     st.subheader("Trading Statistics")
     st.json(stats) 
