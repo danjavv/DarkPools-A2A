@@ -8,6 +8,11 @@ import socket
 import json
 import time
 from collections import defaultdict, deque
+from dark_pools_agent import DarkPoolsAgent
+from market_data_agent import MarketDataAgent
+from trading_agent import TradingAgent
+import asyncio
+from a2a.types import Message, Role, TextPart, Part
 
 st.set_page_config(page_title="Dark Pools A2A Demo", layout="wide")
 
@@ -20,6 +25,32 @@ trading_tab, market_data_tab, dark_pools_tab = st.tabs([
     "Dark Pools Agent"
 ])
 
+# Ensure persistent agent instances using st.session_state
+if 'market_data_agent' not in st.session_state:
+    st.session_state['market_data_agent'] = MarketDataAgent()
+if 'dark_pools_agent' not in st.session_state:
+    st.session_state['dark_pools_agent'] = DarkPoolsAgent()
+if 'trading_agent' not in st.session_state:
+    st.session_state['trading_agent'] = TradingAgent("TradingAgent")
+
+market_data_agent = st.session_state['market_data_agent']
+dark_pools_agent = st.session_state['dark_pools_agent']
+trading_agent = st.session_state['trading_agent']
+
+# --- Session Selector ---
+if 'selected_session' not in st.session_state:
+    st.session_state.selected_session = 'default'
+
+def get_all_sessions_for_agent(agent_name):
+    if agent_name == 'dark_pools':
+        return dark_pools_agent.get_all_sessions()
+    elif agent_name == 'market_data':
+        return market_data_agent.get_all_sessions()
+    elif agent_name == 'trading':
+        return trading_agent.get_all_sessions()
+    else:
+        return {'default': {'state': [], 'artifacts': [], 'events': [], 'eval': []}}
+
 # --- Trading Agent Tab ---
 with trading_tab:
     st.header("Trading Agent: Manual Order Queue & Processing")
@@ -27,7 +58,6 @@ with trading_tab:
     with col1:
         if st.button("Start Servers", key="start_servers"):
             try:
-                # AppleScript to open new Terminal tabs for each server
                 relay_cmd = f'cd {os.path.abspath("../../backend")}; cargo run --bin relay_server'
                 backend_cmd = f'cd {os.path.abspath("../../backend")}; cargo run --bin backend'
                 osa_script = f'''
@@ -38,6 +68,9 @@ with trading_tab:
                 end tell
                 '''
                 subprocess.Popen(["osascript", "-e", osa_script])
+                # Log event and state
+                context_id = st.session_state.get('trading_session_select', 'default')
+                trading_agent.update_session(context_id, event="Servers started", state="servers_started")
                 st.success("Servers started in new Terminal windows (relay_server and backend).")
             except Exception as e:
                 st.error(f"Error starting servers: {e}")
@@ -46,6 +79,8 @@ with trading_tab:
             try:
                 subprocess.run(["pkill", "-f", "relay_server"])
                 subprocess.run(["pkill", "-f", "backend"])
+                context_id = st.session_state.get('trading_session_select', 'default')
+                trading_agent.update_session(context_id, event="Servers stopped", state="servers_stopped")
                 st.success("Servers stopped (relay_server and backend).")
             except Exception as e:
                 st.error(f"Error stopping servers: {e}")
@@ -63,6 +98,20 @@ with trading_tab:
     if queue_submitted:
         o_type_bool_q = False if o_type_q == "Buy" else True
         st.session_state.orders.append((o_type_bool_q, symbol_q, int(quantity_q), int(price_q), int(min_execution_q)))
+        context_id = st.session_state.get('trading_session_select', 'default')
+        trading_agent.update_session(
+            context_id,
+            event=f"Order queued: {o_type_q} {quantity_q} {symbol_q} @ {price_q} (min exec: {min_execution_q})",
+            state="order_queued",
+            artifact={
+                "type": "order_queued",
+                "order_type": o_type_q,
+                "symbol": symbol_q,
+                "quantity": int(quantity_q),
+                "price": int(price_q),
+                "min_execution": int(min_execution_q)
+            }
+        )
         st.success(f"Order queued: {o_type_q} {quantity_q} {symbol_q} @ {price_q} (min exec: {min_execution_q})")
     st.write(f"Queued Orders: {len(st.session_state.orders)}")
     if st.button("Start Processing Queued Orders"):
@@ -70,7 +119,21 @@ with trading_tab:
             st.info(f"Processing {len(st.session_state.orders)} orders...")
             from trading_agent import order as trading_order
             processed_symbols = []
+            context_id = st.session_state.get('trading_session_select', 'default')
             for o in st.session_state.orders:
+                trading_agent.update_session(
+                    context_id,
+                    event=f"Order processed: {o[1]} {o[2]} @ {o[3]}",
+                    state="order_processed",
+                    artifact={
+                        "type": "order_processed",
+                        "order_type": "Buy" if not o[0] else "Sell",
+                        "symbol": o[1],
+                        "quantity": o[2],
+                        "price": o[3],
+                        "min_execution": o[4]
+                    }
+                )
                 trading_order(*o)
                 action = "buy" if not o[0] else "sell"
                 processed_symbols.append((action, o[1]))
@@ -95,34 +158,66 @@ with trading_tab:
                 with open(os.path.join(os.path.dirname(__file__), "matches_output.txt"), "a") as f:
                     for line in match_lines:
                         f.write(line + "\n")
+                trading_agent.update_session(
+                    context_id,
+                    event="Order matching completed.",
+                    state="order_matching_completed",
+                    artifact={"type": "order_matching", "matches": match_lines}
+                )
             st.session_state.orders = []
             st.success("All queued orders processed!")
         else:
             st.warning("No orders to process.")
+
+    st.subheader("Session Selector")
+    sessions = list(get_all_sessions_for_agent('trading').keys())
+    selected_session = st.selectbox("Select Session", sessions, key="trading_session_select")
+    session_data = get_all_sessions_for_agent('trading').get(selected_session, {})
+    st.write("**State History:**")
+    st.json(session_data.get('state', []))
+    st.write("**Artifacts History:**")
+    st.json(session_data.get('artifacts', []))
+    st.write("**Events History:**")
+    st.json(session_data.get('events', []))
+    st.write("**Eval History:**")
+    st.json(session_data.get('eval', []))
 
 # --- Market Data Agent Tab ---
 with market_data_tab:
     st.header("Market Data Agent: Stock Prices & Details")
     symbol_query = st.text_input("Enter symbol to fetch market data", "AAPL", key="market_data_symbol")
     if st.button("Fetch Market Data"):
-        try:
-            ticker = yf.Ticker(symbol_query)
-            info = ticker.info
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            data = {
-                "price": info.get("regularMarketPrice"),
-                "change": info.get("regularMarketChange"),
-                "change_percent": info.get("regularMarketChangePercent"),
-                "volume": info.get("regularMarketVolume"),
-                "timestamp": current_time
-            }
-            if data["price"] is not None:
-                st.write(f"**{symbol_query}** Market Data:")
-                st.json(data)
+        # Build a message for the agent
+        msg = Message(
+            role=Role.user,
+            messageId="streamlit-market-data",
+            parts=[Part(root=TextPart(text="query_price", metadata={"symbol": symbol_query}))]
+        )
+        # Call the agent (handle async in Streamlit)
+        result = asyncio.run(market_data_agent.handle_message(msg))
+        # Optionally display the result
+        if result and hasattr(result, 'parts') and result.parts:
+            st.write(f"**{symbol_query}** Market Data:")
+            metadata = getattr(result.parts[0].root, 'metadata', None)
+            if isinstance(metadata, dict):
+                st.json(metadata)
             else:
-                st.error(f"Could not fetch price data for {symbol_query}.")
-        except Exception as e:
-            st.error(f"Error fetching price for {symbol_query}: {e}")
+                st.error("No market data metadata returned by agent.")
+        else:
+            st.error(f"Could not fetch price data for {symbol_query}.")
+
+    st.subheader("Session Selector")
+    sessions = list(get_all_sessions_for_agent('market_data').keys())
+    selected_session = st.selectbox("Select Session", sessions, key="market_data_session_select")
+    session_data = get_all_sessions_for_agent('market_data').get(selected_session, {})
+    st.write("**State History:**")
+    st.json(session_data.get('state', []))
+    st.write("**Artifacts History:**")
+    st.json(session_data.get('artifacts', []))
+    st.write("**Events History:**")
+    st.json(session_data.get('events', []))
+    st.write("**Eval History:**")
+    st.json(session_data.get('eval', []))
 
 # --- Dark Pools Agent Tab ---
 with dark_pools_tab:
@@ -162,4 +257,16 @@ with dark_pools_tab:
         "Open Orders": len(st.session_state.orders) if 'orders' in st.session_state else 0
     }
     st.subheader("Trading Statistics")
-    st.json(stats) 
+    st.json(stats)
+
+    st.subheader("Session Selector")
+    sessions = list(get_all_sessions_for_agent('dark_pools').keys())
+    selected_session = st.selectbox("Select Session", sessions, key="dark_pools_session_select")
+    session_data = get_all_sessions_for_agent('dark_pools').get(selected_session, {})
+    st.write(f"**State:** {session_data.get('state', '')}")
+    st.write("**Artifacts:**")
+    st.json(session_data.get('artifacts', []))
+    st.write("**Events:**")
+    st.json(session_data.get('events', []))
+    st.write("**Eval:**")
+    st.json(session_data.get('eval', {})) 
