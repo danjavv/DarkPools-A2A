@@ -13,6 +13,8 @@ from market_data_agent import MarketDataAgent
 from trading_agent import TradingAgent
 import asyncio
 from a2a.types import Message, Role, TextPart, Part
+import requests
+import json as pyjson
 
 st.set_page_config(page_title="Dark Pools A2A Demo", layout="wide")
 
@@ -76,9 +78,29 @@ def get_all_sessions_for_agent(agent_name):
     else:
         return {'default': {'state': [], 'artifacts': [], 'events': [], 'eval': []}}
 
+# Helper to toggle display sections
+section_keys = ['events', 'state', 'artifacts', 'eval']
+for key in section_keys:
+    if key not in st.session_state:
+        st.session_state[key] = {'trading': False, 'market_data': False, 'dark_pools': False}
+
+def section_button(label, agent_key, col):
+    with col:
+        btn = st.button(label.capitalize(), key=f"{label}_{agent_key}")
+        if btn:
+            st.session_state[label][agent_key] = not st.session_state[label][agent_key]
+        return st.session_state[label][agent_key]
+
 # --- Trading Agent Tab ---
 with trading_tab:
     st.header("Trading Agent: Manual Order Queue & Processing")
+    # Section buttons at the top, side by side
+    st.write("### Sections")
+    cols = st.columns(4)
+    show_state = section_button('state', 'trading', cols[0])
+    show_artifacts = section_button('artifacts', 'trading', cols[1])
+    show_events = section_button('events', 'trading', cols[2])
+    show_eval = section_button('eval', 'trading', cols[3])
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Start Servers", key="start_servers"):
@@ -194,18 +216,29 @@ with trading_tab:
             st.warning("No orders to process.")
 
     session_data = get_all_sessions_for_agent('trading').get(get_current_session(), {})
-    st.write("**State History:**")
-    st.json(session_data.get('state', []))
-    st.write("**Artifacts History:**")
-    st.json(session_data.get('artifacts', []))
-    st.write("**Events History:**")
-    st.json(session_data.get('events', []))
-    st.write("**Eval History:**")
-    st.json(session_data.get('eval', []))
+    if show_state:
+        st.write("**State History:**")
+        st.json(session_data.get('state', []))
+    if show_artifacts:
+        st.write("**Artifacts History:**")
+        st.json(session_data.get('artifacts', []))
+    if show_events:
+        st.write("**Events History:**")
+        st.json(session_data.get('events', []))
+    if show_eval:
+        st.write("**Eval History:**")
+        st.json(session_data.get('eval', []))
 
 # --- Market Data Agent Tab ---
 with market_data_tab:
     st.header("Market Data Agent: Stock Prices & Details")
+    # Section buttons at the top, side by side
+    st.write("### Sections")
+    cols = st.columns(4)
+    show_state = section_button('state', 'market_data', cols[0])
+    show_artifacts = section_button('artifacts', 'market_data', cols[1])
+    show_events = section_button('events', 'market_data', cols[2])
+    show_eval = section_button('eval', 'market_data', cols[3])
     symbol_query = st.text_input("Enter symbol to fetch market data", "AAPL", key="market_data_symbol")
     if st.button("Fetch Market Data"):
         # Build a message for the agent
@@ -228,22 +261,120 @@ with market_data_tab:
             st.error(f"Could not fetch price data for {symbol_query}.")
 
     session_data = get_all_sessions_for_agent('market_data').get(get_current_session(), {})
-    st.write("**State History:**")
-    st.json(session_data.get('state', []))
-    st.write("**Artifacts History:**")
-    st.json(session_data.get('artifacts', []))
-    st.write("**Events History:**")
-    st.json(session_data.get('events', []))
-    st.write("**Eval History:**")
-    st.json(session_data.get('eval', []))
+    if show_state:
+        st.write("**State History:**")
+        st.json(session_data.get('state', []))
+    if show_artifacts:
+        st.write("**Artifacts History:**")
+        st.json(session_data.get('artifacts', []))
+    if show_events:
+        st.write("**Events History:**")
+        st.json(session_data.get('events', []))
+    if show_eval:
+        st.write("**Eval History:**")
+        st.json(session_data.get('eval', []))
 
 # --- Dark Pools Agent Tab ---
 with dark_pools_tab:
     st.header("Dark Pools Agent: Orders & Trading Statistics")
+    # Section buttons at the top, side by side
+    st.write("### Sections")
+    cols = st.columns(4)
+    show_state = section_button('state', 'dark_pools', cols[0])
+    show_artifacts = section_button('artifacts', 'dark_pools', cols[1])
+    show_events = section_button('events', 'dark_pools', cols[2])
+    show_eval = section_button('eval', 'dark_pools', cols[3])
+
+    # --- Chat Interface for Trading Statistics ---
+    st.subheader("Chat with Dark Pools Agent (Trading Statistics)")
+    chat_key = f"chat_history_{get_current_session()}"
+    if chat_key not in st.session_state:
+        st.session_state[chat_key] = []
+    user_query = st.text_input("Ask about anything in the trading setup (all agents, all code):", "", key="dark_pools_chat_input")
+    if st.button("Send", key="dark_pools_chat_send") and user_query.strip():
+        # Gather session data from all agents
+        session_id = get_current_session()
+        trading_data = get_all_sessions_for_agent('trading').get(session_id, {})
+        market_data = get_all_sessions_for_agent('market_data').get(session_id, {})
+        dark_pools_data = get_all_sessions_for_agent('dark_pools').get(session_id, {})
+        # Prepare context for LLM
+        context = {
+            "session_id": session_id,
+            "trading_agent": trading_data,
+            "market_data_agent": market_data,
+            "dark_pools_agent": dark_pools_data
+        }
+        gemini_api_key = "AIzaSyAtQb3Hi5XZN123Cmy0kqaNuWJnBvusj5g"
+        gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
+        prompt = (
+            "You are a helpful trading assistant. "
+            "You have access to the following session data from three agents: trading_agent, market_data_agent, and dark_pools_agent. "
+            "Answer the user's question using this data. "
+            "Session data (JSON):\n" + pyjson.dumps(context, indent=2) +
+            f"\nUser question: {user_query}\n"
+        )
+        llm_response = None
+        try:
+            resp = requests.post(
+                gemini_url + f"?key={gemini_api_key}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}]
+                },
+                timeout=30
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                llm_response = data["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                llm_response = f"[Gemini API error {resp.status_code}] {resp.text}"
+        except Exception as e:
+            llm_response = f"[Gemini API error] {e}"
+        response = llm_response
+        if not response:
+            # Fallback to previous summary logic
+            def summary(data, agent_name):
+                return (
+                    f"{agent_name} - Artifacts: {len(data.get('artifacts', []))}, "
+                    f"Events: {len(data.get('events', []))}, "
+                    f"State changes: {len(data.get('state', []))}"
+                )
+            response = (
+                f"Session statistics for all agents:\n"
+                f"- {summary(trading_data, 'Trading Agent')}\n"
+                f"- {summary(market_data, 'Market Data Agent')}\n"
+                f"- {summary(dark_pools_data, 'Dark Pools Agent')}\n"
+            )
+        st.session_state[chat_key].append((user_query, response))
+        # Log chat interaction in agent session
+        dark_pools_agent.update_session(
+            session_id,
+            event=f"User asked: {user_query} | Agent replied: {response}",
+            state="chat_interaction",
+            artifact={"type": "chat", "user_query": user_query, "agent_response": response}
+        )
+    # Display chat history
+    for i, (q, r) in enumerate(st.session_state[chat_key]):
+        st.markdown(f"**You:** {q}")
+        st.markdown(f"**Agent:** {r}")
+
     st.subheader("Order Matches")
     matches_file = os.path.join(os.path.dirname(__file__), "matches_output.txt")
-    if st.button("Refresh Matches"):
-        st.session_state["matches_refresh"] = not st.session_state.get("matches_refresh", False)
+    if st.button("Clear Matches"):
+        # Clear the matches file
+        open(matches_file, "w").close()
+        # Clear matches in the agent interface
+        if hasattr(dark_pools_agent, 'matches'):
+            dark_pools_agent.matches.clear()
+        # Update session state, artifacts, and events
+        context_id = get_current_session()
+        dark_pools_agent.update_session(
+            context_id,
+            event="Matches cleared.",
+            state="matches_cleared",
+            artifact={"type": "matches_cleared"}
+        )
+        st.success("Matches cleared.")
     matches_text = ""
     if os.path.exists(matches_file):
         with open(matches_file, "r") as f:
@@ -278,11 +409,15 @@ with dark_pools_tab:
     st.json(stats)
 
     session_data = get_all_sessions_for_agent('dark_pools').get(get_current_session(), {})
-    st.write("**State History:**")
-    st.json(session_data.get('state', []))
-    st.write("**Artifacts History:**")
-    st.json(session_data.get('artifacts', []))
-    st.write("**Events History:**")
-    st.json(session_data.get('events', []))
-    st.write("**Eval History:**")
-    st.json(session_data.get('eval', [])) 
+    if show_state:
+        st.write("**State History:**")
+        st.json(session_data.get('state', []))
+    if show_artifacts:
+        st.write("**Artifacts History:**")
+        st.json(session_data.get('artifacts', []))
+    if show_events:
+        st.write("**Events History:**")
+        st.json(session_data.get('events', []))
+    if show_eval:
+        st.write("**Eval History:**")
+        st.json(session_data.get('eval', [])) 
