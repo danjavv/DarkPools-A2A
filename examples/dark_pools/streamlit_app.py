@@ -239,6 +239,112 @@ with market_data_tab:
     show_artifacts = section_button('artifacts', 'market_data', cols[1])
     show_events = section_button('events', 'market_data', cols[2])
     show_eval = section_button('eval', 'market_data', cols[3])
+    
+    # --- Chat Interface for Market Data Agent ---
+    st.subheader("Chat with Market Data Agent")
+    market_chat_key = f"market_chat_history_{get_current_session()}"
+    if market_chat_key not in st.session_state:
+        st.session_state[market_chat_key] = []
+    
+    # Quick action buttons
+    st.write("**Quick Actions:**")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("📈 Tech Stocks", key="tech_stocks_btn"):
+            market_user_query = "Show me insights for tech stocks"
+            st.session_state.market_data_chat_input = market_user_query
+    
+    with col2:
+        if st.button("💰 Market Analysis", key="market_analysis_btn"):
+            market_user_query = "Provide a general market analysis"
+            st.session_state.market_data_chat_input = market_user_query
+    
+    with col3:
+        if st.button("📊 Stock Info", key="stock_info_btn"):
+            market_user_query = "Get detailed information about AAPL"
+            st.session_state.market_data_chat_input = market_user_query
+    
+    with col4:
+        if st.button("🎯 Trading Tips", key="trading_tips_btn"):
+            market_user_query = "What are the best stocks to watch today?"
+            st.session_state.market_data_chat_input = market_user_query
+    
+    market_user_query = st.text_input("Ask about market data, stock prices, or trading information:", "", key="market_data_chat_input")
+    if st.button("Send", key="market_data_chat_send") and market_user_query.strip():
+        # Gather session data from all agents
+        session_id = get_current_session()
+        trading_data = get_all_sessions_for_agent('trading').get(session_id, {})
+        market_data = get_all_sessions_for_agent('market_data').get(session_id, {})
+        dark_pools_data = get_all_sessions_for_agent('dark_pools').get(session_id, {})
+        
+        # Prepare context for LLM
+        context = {
+            "session_id": session_id,
+            "trading_agent": trading_data,
+            "market_data_agent": market_data,
+            "dark_pools_agent": dark_pools_data
+        }
+        
+        gemini_api_key = "AIzaSyAtQb3Hi5XZN123Cmy0kqaNuWJnBvusj5g"
+        gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
+        
+        prompt = (
+            "You are a helpful market data assistant specializing in stock market information, price analysis, and trading insights. "
+            "You have access to the following session data from three agents: trading_agent, market_data_agent, and dark_pools_agent. "
+            "Focus on providing market data insights, stock price information, and trading analysis. "
+            "If the user asks for specific stock prices, you can suggest they use the symbol input below. "
+            "Session data (JSON):\n" + pyjson.dumps(context, indent=2) +
+            f"\nUser question: {market_user_query}\n"
+        )
+        
+        llm_response = None
+        try:
+            resp = requests.post(
+                gemini_url + f"?key={gemini_api_key}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}]
+                },
+                timeout=30
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                llm_response = data["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                llm_response = f"[Gemini API error {resp.status_code}] {resp.text}"
+        except Exception as e:
+            llm_response = f"[Gemini API error] {e}"
+        
+        response = llm_response
+        if not response:
+            # Fallback response for market data
+            response = (
+                f"I'm your market data assistant! I can help you with:\n"
+                f"- Stock price information\n"
+                f"- Market analysis\n"
+                f"- Trading insights\n"
+                f"- Historical data trends\n\n"
+                f"Use the symbol input below to get real-time price data for specific stocks."
+            )
+        
+        st.session_state[market_chat_key].append((market_user_query, response))
+        
+        # Log chat interaction in agent session
+        market_data_agent.update_session(
+            session_id,
+            event=f"User asked: {market_user_query} | Agent replied: {response}",
+            state="chat_interaction",
+            artifact={"type": "chat", "user_query": market_user_query, "agent_response": response}
+        )
+    
+    # Display market data chat history
+    for i, (q, r) in enumerate(st.session_state[market_chat_key]):
+        st.markdown(f"**You:** {q}")
+        st.markdown(f"**Market Data Agent:** {r}")
+    
+    # --- Manual Symbol Query Section ---
+    st.subheader("Manual Stock Price Query")
     symbol_query = st.text_input("Enter symbol to fetch market data", "AAPL", key="market_data_symbol")
     if st.button("Fetch Market Data"):
         # Build a message for the agent
@@ -259,6 +365,69 @@ with market_data_tab:
                 st.error("No market data metadata returned by agent.")
         else:
             st.error(f"Could not fetch price data for {symbol_query}.")
+
+    # --- Recent Market Data Display ---
+    st.subheader("Recent Market Data")
+    
+    # Popular stocks to display
+    popular_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "NFLX"]
+    
+    if st.button("Refresh Market Data", key="refresh_market_data"):
+        st.session_state.market_data_cache = {}
+    
+    # Initialize cache if not exists
+    if 'market_data_cache' not in st.session_state:
+        st.session_state.market_data_cache = {}
+    
+    # Fetch and display data for popular stocks
+    market_data_rows = []
+    for symbol in popular_stocks:
+        try:
+            if symbol not in st.session_state.market_data_cache:
+                # Fetch fresh data
+                ticker = yf.Ticker(symbol)
+                info = ticker.info
+                
+                price_data = {
+                    "symbol": symbol,
+                    "price": info.get("regularMarketPrice", "N/A"),
+                    "change": info.get("regularMarketChange", "N/A"),
+                    "change_percent": info.get("regularMarketChangePercent", "N/A"),
+                    "volume": info.get("regularMarketVolume", "N/A"),
+                    "market_cap": info.get("marketCap", "N/A"),
+                    "pe_ratio": info.get("trailingPE", "N/A")
+                }
+                st.session_state.market_data_cache[symbol] = price_data
+            else:
+                price_data = st.session_state.market_data_cache[symbol]
+            
+            market_data_rows.append(price_data)
+            
+        except Exception as e:
+            st.error(f"Error fetching data for {symbol}: {e}")
+            continue
+    
+    if market_data_rows:
+        # Create DataFrame and display
+        df = pd.DataFrame(market_data_rows)
+        
+        # Format the data for better display
+        if 'price' in df.columns:
+            df['price'] = df['price'].apply(lambda x: f"${x:,.2f}" if isinstance(x, (int, float)) else x)
+        if 'change' in df.columns:
+            df['change'] = df['change'].apply(lambda x: f"${x:,.2f}" if isinstance(x, (int, float)) else x)
+        if 'change_percent' in df.columns:
+            df['change_percent'] = df['change_percent'].apply(lambda x: f"{x:.2f}%" if isinstance(x, (int, float)) else x)
+        if 'volume' in df.columns:
+            df['volume'] = df['volume'].apply(lambda x: f"{x:,}" if isinstance(x, (int, float)) else x)
+        if 'market_cap' in df.columns:
+            df['market_cap'] = df['market_cap'].apply(lambda x: f"${x/1e9:.1f}B" if isinstance(x, (int, float)) and x > 1e9 else f"${x/1e6:.1f}M" if isinstance(x, (int, float)) else x)
+        if 'pe_ratio' in df.columns:
+            df['pe_ratio'] = df['pe_ratio'].apply(lambda x: f"{x:.2f}" if isinstance(x, (int, float)) else x)
+        
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("No market data available. Click 'Refresh Market Data' to fetch current prices.")
 
     session_data = get_all_sessions_for_agent('market_data').get(get_current_session(), {})
     if show_state:
