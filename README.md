@@ -16,12 +16,6 @@ https://docs.google.com/document/d/1r0Tvx0ZaSb3HcnOCHE-W1CssPn2LPTU4yMPWIufR6Es/
 ![current_flow_final_fixed](images/image1.png)
 ![alternative_flow_redrawn](images/image2.png)
 
-## Video Demos
-
-1. https://www.loom.com/share/aeb9aa3cb1724efebf7af62dd28f17bf?sid=1b08a54a-591a-4bda-a9a1-194ca09ee398
-2. https://www.loom.com/share/7ce8b4bf549f4798bc9b9f982a0ba675?sid=5dff50c3-1609-4a29-a8fa-caf4b07b98ad
-3. https://www.loom.com/share/d4f6f6b6a6434cbdb9a716d864d1ff39?sid=7322ed7c-33a3-44ca-95d7-b62e16509732
-
 ## Features
 
 - Secure order matching in dark pools
