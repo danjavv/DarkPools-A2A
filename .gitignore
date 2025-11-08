@@ -9,3 +9,10 @@ __pycache__
 coverage.xml
 spec.json
 ./backend/target
+
+# IDE and editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

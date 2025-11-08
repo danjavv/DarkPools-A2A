@@ -13,9 +13,8 @@ https://docs.google.com/document/d/1r0Tvx0ZaSb3HcnOCHE-W1CssPn2LPTU4yMPWIufR6Es/
 
 ## FLOW DIAGRAM
 
-![current_flow_final_fixed](https://github.com/user-attachments/assets/b237e270-c1db-4218-ad3b-6ea752670db3)
-![alternative_flow_redrawn](https://github.com/user-attachments/assets/e5e5b222-0369-4885-bf5f-bcce531cb0be)
-![silence_a2a_sdk](https://github.com/user-attachments/assets/4a212dfd-6694-424d-ac6b-e2203dab3667)
+![current_flow_final_fixed](images/image1.png)
+![alternative_flow_redrawn](images/image2.png)
 
 ## Video Demos
 
